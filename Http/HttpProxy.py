@@ -96,12 +96,15 @@ class HttpProxy(object):
 			try:
 				# Request recv
 				localtoremotedata = ''
-				while( True ):
-					localtoremotedata += self._Socket_Local_Computer.recv(RECV_MAXSIZE)
+				while( True ): # socket 保持连接
+					localtoremotedata = self._Socket_Local_Computer.recv(RECV_MAXSIZE)
 					if( localtoremotedata == '' ):
 						# Computer断开socket
 						# except中处理
 						raise Exception( 'Computer socket stop!' )
+
+					# 考虑一次socket recv不能完全读取数据的情况！
+					# 
 
 					# HTTP METHOD
 					# GET
@@ -114,71 +117,29 @@ class HttpProxy(object):
 
 						self._Socket_Local_Remote.send( localtoremotedata )
 
+					# POST
 					elif( localtoremotedata[0:4] == 'POST' ):
 						self._Socket_Local_Remote.send( localtoremotedata )
 
+					# OTHER
 					else:
 						self._Socket_Local_Remote.send( localtoremotedata )
-
-					# if( localtoremotedata[0] == 'G' ):
-					# 	if( len( localtoremotedata ) < 3 ):
-					# 		continue
-					# 	elif( localtoremotedata[0:3] != 'GET' ):
-					# 		#>>>>>>>>>>>>>>>>>>>>>
-					# 		print( '-- 37 --: hello' )
-					# 		#<<<<<<<<<<<<<<<<<<<<<
-					# 		self._Socket_Local_Remote.send( localtoremotedata )
-					# 		#>>>>>>>>>>>>>>>>>>>>>
-					# 		print( '-- 31 --: localtoremotedata \n%s' %localtoremotedata )
-					# 		#<<<<<<<<<<<<<<<<<<<<<
-					# 		break
-							
-					# 	# if( localtoremotedata.find( '\r\n\r\n' ) == -1 ):
-					# 	if( cmp( localtoremotedata[-4:], '\r\n\r\n' ) != 0 ):
-					# 		#>>>>>>>>>>>>>>>>>>>>>
-					# 		print( '-- 34 --: localtoremotedata[-4:] \n%s' %localtoremotedata[-4:] )
-					# 		#<<<<<<<<<<<<<<<<<<<<<
-					# 		continue
-					# 	self._HeadDict_Computer_Local = Tool.HttpHead.H_C_HTTP_HEAD( localtoremotedata )
-					# 	if( self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'close' ):
-					# 		self._Keep_Alive = False
-					# 	if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' ):
-					# 		self._Keep_Alive = False
-					# 	#>>>>>>>>>>>>>>>>>>>>>
-					# 	print( '-- 38 --: hello' )
-					# 	#<<<<<<<<<<<<<<<<<<<<<
-					# 	self._Socket_Local_Remote.send( localtoremotedata )
-					# 	#>>>>>>>>>>>>>>>>>>>>>
-					# 	print( '-- 32 --: localtoremotedata \n%s' %localtoremotedata )
-					# 	#<<<<<<<<<<<<<<<<<<<<<
-					# # POST
-					# elif( localtoremotedata[0] == 'P' ):
-					# 	if( len( localtoremotedata ) < 4 ):
-					# 		continue
-
-					# else:
-					# 	self._Socket_Local_Remote.send( localtoremotedata )
-					# 	#>>>>>>>>>>>>>>>>>>>>>
-					# 	print( '-- 33 --: localtoremotedata \n%s' %localtoremotedata )
-					# 	#<<<<<<<<<<<<<<<<<<<<<
 				
 			except Exception as e:
 				#>>>>>>>>>>>>>>>>>>>>>
-				print( '-- 25 --: %s' %e )
+				print( '-- 25 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
 				self._Keep_Alive = False
 
 		self.stop()
-		# self._Socket_Local_Computer.shutdown()
-		# self._Socket_Local_Computer.close()
 
 	# Remote -> Local
 	def processRemoteToLocal( self ):
 		while( self._Keep_Alive == True ):
 			try:
 				localtoremotedata = ''
-				while( True ):
-					localtoremotedata += self._Socket_Local_Remote.recv(RECV_MAXSIZE)
+				while( self._Keep_Alive ): # socket 保持连接
+					localtoremotedata = self._Socket_Local_Remote.recv(RECV_MAXSIZE)
 					if( localtoremotedata == '' ):
 						# Computer断开socket
 						# except中处理
@@ -188,6 +149,7 @@ class HttpProxy(object):
 						self._Socket_Local_Computer.send( localtoremotedata )
 						break
 
+					# 考虑数据未读取完成，再次循环读取
 					# headsize = localtoremotedata.find( '\r\n\r\n' )
 					# if( headsize == -1 ):
 					# 	continue
@@ -202,15 +164,13 @@ class HttpProxy(object):
 					self._Socket_Local_Computer.send( localtoremotedata )
 
 					#>>>>>>>>>>>>>>>>>>>>>
-					print( '-- 30 --: localtoremotedata \n%s' %localtoremotedata )
+					print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
 					#<<<<<<<<<<<<<<<<<<<<<
 
-			except:
+			except Exception as e:
 				#>>>>>>>>>>>>>>>>>>>>>
-				print( '-- 45 --: %s' %e )
+				print( '-- 45 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
 				self._Keep_Alive = False
 
 		self.stop()
-		# self._Socket_Local_Remote.shutdown()
-		# self._Socket_Local_Remote.close()
