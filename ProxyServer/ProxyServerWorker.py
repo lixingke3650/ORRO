@@ -74,9 +74,6 @@ class ProxyServerWorker():
 
 	def start( self ):
 		try:
-			# worker add
-			self.workadd()
-
 			self.gethead()
 			self.typecheck()
 
@@ -84,15 +81,17 @@ class ProxyServerWorker():
 				self._ProxyWorker = Http.HttpProxy.HttpProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
 			elif( cmp( self._ConnectionType_Local_Remote, 'HTTPS' ) == 0 ):
 				self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
+		except Exception as e:
+			G_Log.error( 'HttpProxy or HttpsProxy create error! [ProxyServerWorker.py:ProxyServerWorker:start]' )
+			return
 
+		try:
 			# worker start
 			self._ProxyWorker.start()
-
 		except Exception as e:
-			G_Log.error( 'HttpsProxy or ProxyWorker start error! [ProxyServerWorker.py:ProxyServerWorker:start]' )
+			G_Log.error( 'ProxyWorker start error! [ProxyServerWorker.py:ProxyServerWorker:start]' )
 			# worker del
 			self.workdel()
-			pass
 
 	def stop( self ):
 		if( self._ProxyWorker != None ):

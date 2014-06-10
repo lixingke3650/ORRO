@@ -12,17 +12,8 @@ import ProxyServerWorker
 import Tool.Logger
 from globals import G_Log
 
-# IP
-SERVER_IP = '127.0.0.1'
-# 端口
-LISTENPORT = 5010
-# 最大连接数
-CONNECT_MAXNUMBER = 1024
 # 超时
 CONNECT_TIMEOUT = 10
-# 最大读取字节数
-RECV_MAXSIZE = 65535
-
 
 class H_C_ProxyServer():
 	"""docstring for ProxyServer"""
@@ -36,22 +27,28 @@ class H_C_ProxyServer():
 	_Address_Local_Compurte = None
 	_Ip_Loacl_Compurte = None
 	_Port_Local_Compurte = None
+	_Connect_Maximum = None
 	_Socket_Local_Compurte = None
 
 	_Address_Compurte_Local = None
 	_Socket_Compurte_Local = None
 
-	def __init__( self, ip='127.0.0.1', port=5010 ):
+	def __init__( self, ip='127.0.0.1', port=5010, maximum=1024 ):
 		self._Ip_Loacl_Compurte = ip
 		self._Port_Local_Compurte = port
+		self._Connect_Maximum = maximum
 		self._Address_Local_Compurte = ( self._Ip_Loacl_Compurte, self._Port_Local_Compurte )
 		self._WorkerThreadRLock = threading.RLock()
 		
 	def start( self ):
+		'''ProxyServer Start.
+
+		   socket create/bind/listen.'''
+
 		try:
 			self._Socket_Local_Compurte = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 			self._Socket_Local_Compurte.bind( self._Address_Local_Compurte )
-			self._Socket_Local_Compurte.listen( CONNECT_MAXNUMBER )
+			self._Socket_Local_Compurte.listen( self._Connect_Maximum )
 
 		except:
 			G_Log.error( 'socket start error! [ProxyServer.py:H_C_ProxyServer:start]' )
@@ -69,14 +66,14 @@ class H_C_ProxyServer():
 		else:
 			self._isRun = False
 			try:
-				self._ProxyServerThread.jion(10)
+				self._ProxyServerThread.jion(CONNECT_TIMEOUT)
 				return True
 				
 			except:
 				return False
 
 	def generator( self ):
-		'''proxyworker generator(socket.accept)'''
+		'''proxyworker generator(socket.accept).'''
 
 		while( self._isRun == True ):
 			try:
@@ -86,10 +83,12 @@ class H_C_ProxyServer():
 				workerthread.start()
 
 			except:
-				pass
+				G_Log.error( 'workerthread generator error! [ProxyServer.py:H_C_ProxyServer:generator]' )
+				# pass
 
 	def proxyserverworksmanager( self, oper, worker ):
-		'''proxyworks add and del'''
+		'''proxyworks add and del.'''
+
 		# thread lock
 		self._WorkerThreadRLock.acquire()
 
@@ -100,7 +99,7 @@ class H_C_ProxyServer():
 				self._ProxyServerWorks.remove( worker )
 		except:
 			G_Log.error( 'ProxyServerWorks add or del error! [ProxyServer.py:H_C_ProxyServer:proxyserverworksmanager]' )
-			pass
+			# pass
 
 		# thread unlock
 		self._WorkerThreadRLock.release()

@@ -30,15 +30,24 @@ class HttpProxy(object):
 	_ProcessRtoL = None
 
 	_Keep_Alive = None
+	_IsWorker = None
 
 	def __init__( self, socklc, headstr, workermanager ):
 		self._Socket_Local_Computer = socklc
 		self._HeadStrFiest_Computer_Local = headstr
 		self._WorkerManagerLocalComputer = workermanager
-
-		
+		self._IsWorker = False
 
 	def start( self ):
+		try:
+			# worker add
+			self._WorkerManagerLocalComputer.workadd()
+			self._IsWorker = True
+		except:
+			self._IsWorker = False
+			G_Log.error( 'Worker add error! [HttpProxy.py:HttpProxy:start]' )
+			return
+
 		# Fir Head Format
 		self._HeadDict_Computer_Local = Tool.HttpHead.H_C_HTTP_HEAD( self._HeadStrFiest_Computer_Local )
 
@@ -51,10 +60,7 @@ class HttpProxy(object):
 		except:
 			self._WorkerManagerLocalComputer.workdel()
 			G_Log.error( 'socket connect error! [HttpProxy.py:HttpProxy:start]' )
-
-
-		# first head send
-		#self._Socket_Local_Remote.send( HeadStrFiest_Local_Computer )
+			return
 
 		# process thread
 		self._ProcessLtoR = threading.Thread( target = self.processLocalToRemote )
@@ -78,11 +84,12 @@ class HttpProxy(object):
 
 			# self._ProcessLtoR.join()
 			# self._ProcessRtoL.join()
-
-			self._WorkerManagerLocalComputer.workdel()
+			if( self._IsWorker == True ): 
+				self._IsWorker = False
+				self._WorkerManagerLocalComputer.workdel()
 		except Exception as e:
 			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop]' )
-			pass
+			# pass
 
 	# Local -> Remote
 	def processLocalToRemote( self ):
@@ -164,7 +171,7 @@ class HttpProxy(object):
 					self._Socket_Local_Computer.send( localtoremotedata )
 
 					#>>>>>>>>>>>>>>>>>>>>>
-					print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
+					#print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
 					#<<<<<<<<<<<<<<<<<<<<<
 
 			except Exception as e:
