@@ -24,20 +24,20 @@ class H_C_ProxyServer():
 	_WorkerThreadRLock = None
 
 	# obj _ self _ other
-	_Address_Local_Compurte = None
-	_Ip_Loacl_Compurte = None
-	_Port_Local_Compurte = None
+	_Address_Local_Server = None
+	_Ip_Loacl_Server = None
+	_Port_Local_Server = None
 	_Connect_Maximum = None
-	_Socket_Local_Compurte = None
+	_Socket_Local_Server = None
 
-	_Address_Compurte_Local = None
-	_Socket_Compurte_Local = None
+	_Address_Local_Computer = None
+	_Socket_Local_Computer = None
 
 	def __init__( self, ip='127.0.0.1', port=5010, maximum=1024 ):
-		self._Ip_Loacl_Compurte = ip
-		self._Port_Local_Compurte = port
+		self._Ip_Loacl_Server = ip
+		self._Port_Local_Server = port
 		self._Connect_Maximum = maximum
-		self._Address_Local_Compurte = ( self._Ip_Loacl_Compurte, self._Port_Local_Compurte )
+		self._Address_Local_Server = ( self._Ip_Loacl_Server, self._Port_Local_Server )
 		self._WorkerThreadRLock = threading.RLock()
 		
 	def start( self ):
@@ -46,9 +46,9 @@ class H_C_ProxyServer():
 		   socket create/bind/listen.'''
 
 		try:
-			self._Socket_Local_Compurte = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-			self._Socket_Local_Compurte.bind( self._Address_Local_Compurte )
-			self._Socket_Local_Compurte.listen( self._Connect_Maximum )
+			self._Socket_Local_Server = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+			self._Socket_Local_Server.bind( self._Address_Local_Server )
+			self._Socket_Local_Server.listen( self._Connect_Maximum )
 
 		except:
 			G_Log.error( 'socket start error! [ProxyServer.py:H_C_ProxyServer:start]' )
@@ -77,8 +77,8 @@ class H_C_ProxyServer():
 
 		while( self._isRun == True ):
 			try:
-				self._Socket_Compurte_Local, self._Address_Compurte_Local = self._Socket_Local_Compurte.accept()
-				proxyserverworker = ProxyServerWorker.ProxyServerWorker( self._Socket_Compurte_Local, self.proxyserverworksmanager )
+				self._Socket_Local_Computer, self._Address_Local_Computer = self._Socket_Local_Server.accept()
+				proxyserverworker = ProxyServerWorker.ProxyServerWorker( self._Socket_Local_Computer, self.proxyserverworksmanager )
 				workerthread = threading.Thread( target = proxyserverworker.start )
 				workerthread.start()
 
@@ -89,6 +89,9 @@ class H_C_ProxyServer():
 	def proxyserverworksmanager( self, oper, worker ):
 		'''proxyworks add and del.'''
 
+		# 返回值，当前work总数
+		ret = 0
+
 		# thread lock
 		self._WorkerThreadRLock.acquire()
 
@@ -97,9 +100,13 @@ class H_C_ProxyServer():
 				self._ProxyServerWorks.append( worker )
 			elif( cmp( oper, 'del' ) == 0 ):
 				self._ProxyServerWorks.remove( worker )
+
+			ret = len( self._ProxyServerWorks )
 		except:
 			G_Log.error( 'ProxyServerWorks add or del error! [ProxyServer.py:H_C_ProxyServer:proxyserverworksmanager]' )
-			# pass
 
 		# thread unlock
 		self._WorkerThreadRLock.release()
+
+		# 返回当前work总数
+		return ret;

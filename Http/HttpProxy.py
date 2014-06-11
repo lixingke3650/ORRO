@@ -41,7 +41,10 @@ class HttpProxy(object):
 	def start( self ):
 		try:
 			# worker add
-			self._WorkerManagerLocalComputer.workadd()
+			ret = self._WorkerManagerLocalComputer.workadd()
+			# >>>>>
+			# print( '--add-- worklen: %s\n' %ret )
+			# <<<<<
 			self._IsWorker = True
 		except:
 			self._IsWorker = False
@@ -58,7 +61,10 @@ class HttpProxy(object):
 			self._Socket_Local_Remote.connect( self._Local_Remote_Address )
 
 		except:
-			self._WorkerManagerLocalComputer.workdel()
+			ret = self._WorkerManagerLocalComputer.workdel()
+			# >>>>>
+			# print( '--connect del-- worklen: %s\n' %ret )
+			# <<<<<
 			G_Log.error( 'socket connect error! [HttpProxy.py:HttpProxy:start]' )
 			return
 
@@ -86,17 +92,19 @@ class HttpProxy(object):
 			# self._ProcessRtoL.join()
 			if( self._IsWorker == True ): 
 				self._IsWorker = False
-				self._WorkerManagerLocalComputer.workdel()
+				ret = self._WorkerManagerLocalComputer.workdel()
+				# >>>>>
+				# print( '--del-- worklen: %s\n' %ret )
+				# <<<<<
 		except Exception as e:
 			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop]' )
-			# pass
 
 	# Local -> Remote
 	def processLocalToRemote( self ):
 		# first
 		self._Socket_Local_Remote.send( self._HeadStrFiest_Computer_Local )
 		#>>>>>>>>>>>>>>>>>>>>>
-		print( '-- 30 --: HeadStrFiest \n%s' %self._HeadStrFiest_Computer_Local )
+		# print( '-- 30 --: HeadStrFiest \n%s' %self._HeadStrFiest_Computer_Local )
 		#<<<<<<<<<<<<<<<<<<<<<
 
 		while( self._Keep_Alive == True ):
@@ -109,6 +117,10 @@ class HttpProxy(object):
 						# Computer断开socket
 						# except中处理
 						raise Exception( 'Computer socket stop!' )
+
+					#>>>>>>>>>>>>>>>>>>>>>
+					# print( '-- 31 --: localtoremotedata \n%s' %localtoremotedata )
+					#<<<<<<<<<<<<<<<<<<<<<
 
 					# 考虑一次socket recv不能完全读取数据的情况！
 					# 
@@ -134,7 +146,7 @@ class HttpProxy(object):
 				
 			except Exception as e:
 				#>>>>>>>>>>>>>>>>>>>>>
-				print( '-- 25 --: %s\n' %e )
+				# print( '-- 25 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
 				self._Keep_Alive = False
 
@@ -176,7 +188,7 @@ class HttpProxy(object):
 
 			except Exception as e:
 				#>>>>>>>>>>>>>>>>>>>>>
-				print( '-- 45 --: %s\n' %e )
+				# print( '-- 45 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
 				self._Keep_Alive = False
 

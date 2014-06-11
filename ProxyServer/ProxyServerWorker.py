@@ -80,16 +80,20 @@ class ProxyServerWorker():
 			if( cmp( self._ConnectionType_Local_Remote, 'HTTP' ) == 0 ):
 				self._ProxyWorker = Http.HttpProxy.HttpProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
 			elif( cmp( self._ConnectionType_Local_Remote, 'HTTPS' ) == 0 ):
-				self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
+				# self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
+				G_Log.warn( 'ProxyWorker create warning - HTTPS! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )
+			else:
+				G_Log.error( 'ProxyWorker create error! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )
+				return
 		except Exception as e:
-			G_Log.error( 'HttpProxy or HttpsProxy create error! [ProxyServerWorker.py:ProxyServerWorker:start]' )
+			G_Log.error( 'HttpProxy or HttpsProxy create error! [ProxyServerWorker.py:ProxyServerWorker:start] --> %s' %e )
 			return
 
 		try:
 			# worker start
 			self._ProxyWorker.start()
 		except Exception as e:
-			G_Log.error( 'ProxyWorker start error! [ProxyServerWorker.py:ProxyServerWorker:start]' )
+			G_Log.error( 'ProxyWorker start error! [ProxyServerWorker.py:ProxyServerWorker:start] --> %s' %e )
 			# worker del
 			self.workdel()
 
@@ -100,7 +104,7 @@ class ProxyServerWorker():
 			self.workdel()
 
 	def workadd( self ):
-		self._WorkerManagerLocalComputer( 'add', self )
+		return self._WorkerManagerLocalComputer( 'add', self )
 
 	def workdel( self ):
-		self._WorkerManagerLocalComputer( 'del', self )
+		return self._WorkerManagerLocalComputer( 'del', self )
