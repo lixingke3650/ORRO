@@ -4,6 +4,13 @@ ORRO -- 项目尚未完成！！
 一个用Python写成的代理
 
 ----
+### 增加Proxy-Connection  
+长连接问题貌似消失了，不知为何，只增加了Proxy-Connection头而已，  
+调查中。  
+程序占用CPU，调查中。  
+2014.06.12
+
+----
 ### Computer <-> ORRO <-> Site  
 Computer <-> ORRO <-> Site 形式可以运行。  
 欠缺：   
