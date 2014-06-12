@@ -101,10 +101,14 @@ class HttpProxy(object):
 
 	# Local -> Remote
 	def processLocalToRemote( self ):
+		'''本地请求信息发送到远程'''
+
 		# first
-		self._Socket_Local_Remote.send( self._HeadStrFiest_Computer_Local )
+		head = Tool.HttpHead.H_C_HTTP_HEAD(self._HeadStrFiest_Computer_Local)
+		head = self.toProxyConnection( head )
+		self._Socket_Local_Remote.send( head.getHeadStr() )
 		#>>>>>>>>>>>>>>>>>>>>>
-		# print( '-- 30 --: HeadStrFiest \n%s' %self._HeadStrFiest_Computer_Local )
+		# print( '-- 30 --: HeadStrFiest \n%s' %head.getHeadStr() )
 		#<<<<<<<<<<<<<<<<<<<<<
 
 		while( self._Keep_Alive == True ):
@@ -125,6 +129,10 @@ class HttpProxy(object):
 					# 考虑一次socket recv不能完全读取数据的情况！
 					# 
 
+					# Connection -> Proxy-Connection
+					localtoremotedata = Tool.HttpHead.H_C_HTTP_HEAD(self._HeadStrFiest_Computer_Local)
+					localtoremotedata = self.toProxyConnection( localtoremotedata )
+
 					# HTTP METHOD
 					# GET
 					if( localtoremotedata[0:3] == 'GET' ):
@@ -133,6 +141,8 @@ class HttpProxy(object):
 							self._Keep_Alive = False
 						if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' ):
 							self._Keep_Alive = False
+
+						self._Keep_Alive = False
 
 						self._Socket_Local_Remote.send( localtoremotedata )
 
@@ -154,6 +164,8 @@ class HttpProxy(object):
 
 	# Remote -> Local
 	def processRemoteToLocal( self ):
+		'''读取远程回复信息并发送给本地应用'''
+
 		while( self._Keep_Alive == True ):
 			try:
 				localtoremotedata = ''
@@ -183,7 +195,7 @@ class HttpProxy(object):
 					self._Socket_Local_Computer.send( localtoremotedata )
 
 					#>>>>>>>>>>>>>>>>>>>>>
-					#print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
+					# print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
 					#<<<<<<<<<<<<<<<<<<<<<
 
 			except Exception as e:
@@ -193,3 +205,22 @@ class HttpProxy(object):
 				self._Keep_Alive = False
 
 		self.stop()
+
+	def toProxyConnection( self, head ):
+		'''替换头信息Connection为Proxy-Connection'''
+
+		try:
+			connection = head.getTags( "Connection" )
+		except:
+			return head
+
+		if( connection == None ):
+			return head
+
+		# Connection删除
+		head.delHeadKey( "Connection" )
+		# Proxy-Connection添加
+		head.addHeadKey( "Proxy-Connection: " + connection)
+
+		return head
+		
