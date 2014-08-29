@@ -50,8 +50,8 @@ class H_C_ProxyServer():
 			self._Socket_Local_Server.bind( self._Address_Local_Server )
 			self._Socket_Local_Server.listen( self._Connect_Maximum )
 
-		except:
-			G_Log.error( 'socket start error! [ProxyServer.py:H_C_ProxyServer:start]' )
+		except Exception as e:
+			G_Log.error( 'socket start error! [ProxyServer.py:H_C_ProxyServer:start] --> %s' %e )
 			self._isRun = False
 			return False
 
@@ -78,12 +78,15 @@ class H_C_ProxyServer():
 		while( self._isRun == True ):
 			try:
 				self._Socket_Local_Computer, self._Address_Local_Computer = self._Socket_Local_Server.accept()
+				#>>>>>>>>>>>>>>>>>>
+				print("accept!")
+				#<<<<<<<<<<<<<<<<<<
 				proxyserverworker = ProxyServerWorker.ProxyServerWorker( self._Socket_Local_Computer, self.proxyserverworksmanager )
 				workerthread = threading.Thread( target = proxyserverworker.start )
 				workerthread.start()
 
-			except:
-				G_Log.error( 'workerthread generator error! [ProxyServer.py:H_C_ProxyServer:generator]' )
+			except Exception as e:
+				G_Log.error( 'workerthread generator error! [ProxyServer.py:H_C_ProxyServer:generator] --> %s' %e )
 				# pass
 
 	def proxyserverworksmanager( self, oper, worker ):
@@ -98,12 +101,18 @@ class H_C_ProxyServer():
 		try:
 			if( cmp( oper, 'add') == 0 ):
 				self._ProxyServerWorks.append( worker )
+				#>>>>>>>>>>>
+				print('work add : ' + str(len(self._ProxyServerWorks)))
+				#<<<<<<<<<<<
 			elif( cmp( oper, 'del' ) == 0 ):
+				#>>>>>>>>>>>
+				print('work del : ' + str(len(self._ProxyServerWorks)))
+				#<<<<<<<<<<<
 				self._ProxyServerWorks.remove( worker )
 
 			ret = len( self._ProxyServerWorks )
-		except:
-			G_Log.error( 'ProxyServerWorks add or del error! [ProxyServer.py:H_C_ProxyServer:proxyserverworksmanager]' )
+		except Exception as e:
+			G_Log.error( 'ProxyServerWorks add or del error! [ProxyServer.py:H_C_ProxyServer:proxyserverworksmanager] --> %s' %e )
 
 		# thread unlock
 		self._WorkerThreadRLock.release()

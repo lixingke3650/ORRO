@@ -46,9 +46,9 @@ class HttpProxy(object):
 			# print( '--add-- worklen: %s\n' %ret )
 			# <<<<<
 			self._IsWorker = True
-		except:
+		except Exception as e:
 			self._IsWorker = False
-			G_Log.error( 'Worker add error! [HttpProxy.py:HttpProxy:start]' )
+			G_Log.error( 'Worker add error! [HttpProxy.py:HttpProxy:start] --> %s' %e )
 			return
 
 		# Fir Head Format
@@ -56,16 +56,22 @@ class HttpProxy(object):
 
 		try:
 			# Local - Remote Connect
-			self._Local_Remote_Address = ( self._HeadDict_Computer_Local.getTags( 'Host' ), 80 )
+			# 考虑Host中指定port的情况
+			hosttmp = self._HeadDict_Computer_Local.getTags( 'Host' )
+			host = hosttmp.split(':')
+			if (len(host) > 1):
+				self._Local_Remote_Address = ( host[0], int(host[1]) )
+			else:
+				self._Local_Remote_Address = ( self._HeadDict_Computer_Local.getTags( 'Host' ), 80 )
 			self._Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 			self._Socket_Local_Remote.connect( self._Local_Remote_Address )
 
-		except:
+		except Exception as e:
 			ret = self._WorkerManagerLocalComputer.workdel()
 			# >>>>>
 			# print( '--connect del-- worklen: %s\n' %ret )
 			# <<<<<
-			G_Log.error( 'socket connect error! [HttpProxy.py:HttpProxy:start]' )
+			G_Log.error( 'socket connect error! [HttpProxy.py:HttpProxy:start] --> %s' %e )
 			return
 
 		# process thread
@@ -97,7 +103,7 @@ class HttpProxy(object):
 				# print( '--del-- worklen: %s\n' %ret )
 				# <<<<<
 		except Exception as e:
-			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop]' )
+			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop] --> %s' %e )
 
 	# Local -> Remote
 	def processLocalToRemote( self ):
@@ -105,8 +111,9 @@ class HttpProxy(object):
 
 		# first
 		head = Tool.HttpHead.H_C_HTTP_HEAD(self._HeadStrFiest_Computer_Local)
-		head = self.toProxyConnection( head )
+		head = self.toProxyConnection( None, head )
 		self._Socket_Local_Remote.send( head.getHeadStr() )
+		G_Log.debug( 'Local  ->Remote : %s' %head.getHeadStr() )
 		#>>>>>>>>>>>>>>>>>>>>>
 		# print( '-- 30 --: HeadStrFiest \n%s' %head.getHeadStr() )
 		#<<<<<<<<<<<<<<<<<<<<<
@@ -117,6 +124,7 @@ class HttpProxy(object):
 				localtoremotedata = ''
 				while( True ): # socket 保持连接
 					localtoremotedata = self._Socket_Local_Computer.recv(RECV_MAXSIZE)
+					G_Log.debug( 'Computer->Local   : %s' %localtoremotedata )
 					if( localtoremotedata == '' ):
 						# Computer断开socket
 						# except中处理
@@ -130,21 +138,26 @@ class HttpProxy(object):
 					# 
 
 					# Connection -> Proxy-Connection
-					localtoremotedata = Tool.HttpHead.H_C_HTTP_HEAD(self._HeadStrFiest_Computer_Local)
-					localtoremotedata = self.toProxyConnection( localtoremotedata )
+					#localtoremotedata = Tool.HttpHead.H_C_HTTP_HEAD(self._HeadStrFiest_Computer_Local)
+					#localtoremotedata = self.toProxyConnection( localtoremotedata )
 
 					# HTTP METHOD
 					# GET
 					if( localtoremotedata[0:3] == 'GET' ):
 						self._HeadDict_Computer_Local = Tool.HttpHead.H_C_HTTP_HEAD( localtoremotedata )
-						if( self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'close' ):
+						if( self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'close' or self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'Close'):
 							self._Keep_Alive = False
-						if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' ):
+						if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' or self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'Close'):
 							self._Keep_Alive = False
 
-						self._Keep_Alive = False
+						# Connection -> Proxy-Connection
+						localtoremotedatatmp = self.toProxyConnection( None, self._HeadDict_Computer_Local ).getHeadStr()
 
-						self._Socket_Local_Remote.send( localtoremotedata )
+						self._Socket_Local_Remote.send( localtoremotedatatmp )
+						G_Log.debug( 'Local  ->Remote : %s' %localtoremotedatatmp )
+
+						# 不保持连接
+						# self._Keep_Alive = False
 
 					# POST
 					elif( localtoremotedata[0:4] == 'POST' ):
@@ -158,6 +171,7 @@ class HttpProxy(object):
 				#>>>>>>>>>>>>>>>>>>>>>
 				# print( '-- 25 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
+				G_Log.info( 'processLocalToRemote info! [HttpProxy.py:HttpProxy:processLocalToRemote] --> %s' %e )
 				self._Keep_Alive = False
 
 		self.stop()
@@ -187,12 +201,13 @@ class HttpProxy(object):
 
 					self._HeadDict_Computer_Local = Tool.HttpHead.H_C_HTTP_HEAD( localtoremotedata )
 
-					if( self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'close' ):
+					if( self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'close' or self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'Close' ):
 						self._Keep_Alive = False
-					if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' ):
+					if( self._HeadDict_Computer_Local.getTags( 'Proxy-Connection' ) == 'close' or self._HeadDict_Computer_Local.getTags( 'Connection' ) == 'Close' ):
 						self._Keep_Alive = False
 
 					self._Socket_Local_Computer.send( localtoremotedata )
+					G_Log.debug( 'Remote->Local   : %s' %localtoremotedata )
 
 					#>>>>>>>>>>>>>>>>>>>>>
 					# print( '-- 40 --: localtoremotedata \n%s' %localtoremotedata )
@@ -202,25 +217,39 @@ class HttpProxy(object):
 				#>>>>>>>>>>>>>>>>>>>>>
 				# print( '-- 45 --: %s\n' %e )
 				#<<<<<<<<<<<<<<<<<<<<<
+				G_Log.info( 'processRemoteToLocal info! [HttpProxy.py:HttpProxy:processRemoteToLocal] --> %s' %e )
 				self._Keep_Alive = False
 
 		self.stop()
 
-	def toProxyConnection( self, head ):
-		'''替换头信息Connection为Proxy-Connection'''
+	def toProxyConnection( self, keep, head ):
+		'''替换头信息Connection为Proxy-Connection
+		keep: None - 设置为原来信息
+			  True - 保持连接
+			  False- 不保持连接'''
 
 		try:
-			connection = head.getTags( "Connection" )
-		except:
+			connection = head.getTags( 'Connection' )
+		except Exception as e:
+			G_Log.warn( 'Connection Get error! [HttpProxy.py:HttpProxy:toProxyConnection] --> %s' %e )
 			return head
 
 		if( connection == None ):
 			return head
 
-		# Connection删除
-		head.delHeadKey( "Connection" )
-		# Proxy-Connection添加
-		head.addHeadKey( "Proxy-Connection: " + connection)
+		try:
+			# Connection删除
+			head.delHeadKey( 'Connection' )
+			# Proxy-Connection添加
+			if( keep == True ):
+				head.addHeadKey( 'Proxy-Connection: ' + 'keep-alive')
+			elif( keep == False ):
+				head.addHeadKey( 'Proxy-Connection: ' + 'close')
+			else:
+				head.addHeadKey( 'Proxy-Connection: ' + connection)
 
+		except Exception as e:
+			G_Log.error( 'Connection -> Proxy-Connection error! [HttpProxy.py:HttpProxy:toProxyConnection] --> %s' %e )
+			return head
 		return head
 		

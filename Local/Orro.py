@@ -20,7 +20,7 @@ RECV_MAXSIZE = 65535
 
 
 def main():
-	head = Tool.HttpHead.H_C_HTTP_HEAD()
+	# head = Tool.HttpHead.H_C_HTTP_HEAD()
 	ORRO = ProxyServer.ProxyServer.H_C_ProxyServer( SERVER_IP, LISTENPORT, CONNECT_MAXNUMBER )
 	ORRO.start()
 
