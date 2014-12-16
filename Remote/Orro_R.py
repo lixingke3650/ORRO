@@ -26,6 +26,8 @@ class ApplicationHTTP():
 	def __call__(self, environ, start_response):
 		self._Environ = environ
 		self._ResLength = 0
+		self._Response = ['']
+		self._Socket_R = None
 
 		Log.debug('ApplicationHTTP  __call__ START ')
 
@@ -54,16 +56,21 @@ class ApplicationHTTP():
 			# 请求head信息发送
 			self._Socket_R.send(http_request_head_str)
 			# 请求body信息发送
-			while True:
-				buffer = environ['wsgi.input'].read(self._BUFFER_SIZE)
-				if (buffer == None):
-					break
-				if (len(buffer) <= 0):
-					break
-				# >>>>
-				Log.debug("environ['wsgi.input']: " + buffer);
-				# <<<<
-				self._Socket_R.send(buffer)
+			if (http_requestbody_length > 0):
+				lengthtmp = 0
+				while True:
+					buffer = environ['wsgi.input'].read(self._BUFFER_SIZE)
+					if (buffer == None):
+						break
+					if (len(buffer) <= 0):
+						break
+					# >>>>
+					Log.debug("environ['wsgi.input']: " + buffer);
+					# <<<<
+					self._Socket_R.send(buffer)
+					lengthtmp += len(buffer)
+					if (lengthtmp >= http_requestbody_length):
+						break
 			# response读取
 			# response head 读取
 			http_response_head = self.getResHead()
@@ -83,10 +90,10 @@ class ApplicationHTTP():
 					if (len(buffer) <= 0):
 						break
 					lengthtmp += len(buffer)
-					self._ResLength += lengthtmp
 					self._Response.append(buffer)
 					if (lengthtmp >= http_responsebody_length):
 						break
+				self._ResLength += lengthtmp
 			# 断开请求连接
 			self._Socket_R.close()
 			self._Socket_R = None
