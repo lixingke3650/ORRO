@@ -5,10 +5,14 @@
 # sys
 import socket
 import webob
+# import msvcrt
+# import os
 # original
 import Logger
 import HttpHead
 
+# 二进制文件处理
+# msvcrt.setmode( 0, os.O_BINARY )
 
 Log = Logger.getLogger()
 
@@ -40,7 +44,7 @@ class ApplicationHTTP():
 			if (http_request_head_dict.getTags('Content-Length') != None):
 				http_requestbody_length = int(http_request_head_dict.getTags('Content-Length'))
 			# >>>>
-			Log.debug('http_request_head_str: ' + http_request_head_str);
+			Log.debug('http_request_head_str: \r\n' + http_request_head_str);
 			# <<<<
 			# 请求Address作成
 			address = (http_request_head_dict.getTags('Host'), 80)
@@ -64,7 +68,7 @@ class ApplicationHTTP():
 			# response head 读取
 			http_response_head = self.getResHead()
 			# >>>>
-			Log.debug('http_response_head: ' + http_response_head);
+			Log.debug('http_response_head: \r\n' + http_response_head);
 			# <<<<
 			self._Response.append(http_response_head)
 			http_response_head_dict = HttpHead.HttpHead(http_response_head)
@@ -94,7 +98,7 @@ class ApplicationHTTP():
 			response_headers = [('Content­type','text/plain'),("Content-Length", str(self._ResLength)),('ProxyOrro-Connection','keep-alive')]
 			start_response(status, response_headers)
 			# >>>>
-			# Log.debug('self._Response: ' + b''.join(self._Response));
+			Log.debug('self._Response: \r\n' + b'-+-'.join(self._Response));
 			# <<<<
 			return iter(self._Response)
 
