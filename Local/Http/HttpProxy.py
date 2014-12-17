@@ -47,6 +47,9 @@ class HttpProxy(object):
 		# worker add
 		try:
 			ret = self._WorkerManagerLocalComputer.workadd()
+			#>>>>
+			print('WorkAdd : %d' %ret)
+			#<<<<
 			self._IsWorker = True
 		except Exception as e:
 			self._IsWorker = False
@@ -89,6 +92,9 @@ class HttpProxy(object):
 			if( self._IsWorker == True ): 
 				self._IsWorker = False
 				ret = self._WorkerManagerLocalComputer.workdel()
+				#>>>>
+				print('WorkDel : %d' %ret)
+				#<<<<
 		except Exception as e:
 			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop] --> %s' %e )
 
@@ -110,8 +116,14 @@ class HttpProxy(object):
 				orrohead = self.createOrroHead(length, False)
 			# ORRO head发送
 			self._Socket_Local_Remote.send( orrohead )
+			# >>>>>>>>>
+			G_Log.debug( 'ORRO HEAD: \r\n%s' %orrohead )
+			# <<<<<<<<<
 			# 请求头发送
 			self._Socket_Local_Remote.send( self._FirstHeadStr_Computer_Local )
+			# >>>>>>>>>
+			G_Log.debug( 'Request HEAD: \r\n%s' %self._FirstHeadStr_Computer_Local )
+			# <<<<<<<<<
 			# # 请求body发送
 			# bodysizestr = self._FirstHeadDict_Computer_Local.getTags('Content-Length')
 			# if (bodysizestr != None):
@@ -121,9 +133,9 @@ class HttpProxy(object):
 				if (len(buffer) <= 0):
 					self._Keep_Alive = False
 					break
-				buflength = len(buffer)
-				orrohead = self.createOrroHead(buflength, True)
-				self._Socket_Local_Remote.send( orrohead )
+				# buflength = len(buffer)
+				# orrohead = self.createOrroHead(buflength, True)
+				# self._Socket_Local_Remote.send( orrohead )
 				self._Socket_Local_Remote.send( buffer )
 		except Exception as e:
 			G_Log.error( 'processLocalToRemote error! [HttpProxy.py:HttpProxy:processLocalToRemote] --> %s' %e )
@@ -258,6 +270,8 @@ class HttpProxy(object):
 		proxyconnection: None - 不添加ProxyOrro-Connection
 						 True - 添加ProxyOrro-Connection为keep-alive
 						 False- 添加ProxyOrro-Connection为close
+
+		注意：此处添加 Connection: close 头，每次重连ORRO服务。
 		'''
 
 		proxyorro = '\r\n'
@@ -268,6 +282,7 @@ class HttpProxy(object):
 		headstr = 'POST http://192.168.1.125:5085/ORRO_HTTP HTTP/1.1\r\n'	\
 				+ 'Host: ' + S_ORRO_HOST + ':' + str(S_ORRO_PORT) + '\r\n'	\
 				+ 'Content-Length: ' + str(length) + '\r\n'					\
+				+ 'Connection: close\r\n'									\
 				+ proxyorro 												\
 				+ '\r\n'
 		return headstr
