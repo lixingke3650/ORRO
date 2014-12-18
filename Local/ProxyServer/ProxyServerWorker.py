@@ -82,6 +82,7 @@ class ProxyServerWorker():
 			elif( cmp( self._ConnectionType_Local_Remote, 'HTTPS' ) == 0 ):
 				# self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
 				G_Log.warn( 'ProxyWorker create warning - HTTPS! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )
+				return
 			else:
 				G_Log.error( 'ProxyWorker create error! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )
 				return

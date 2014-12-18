@@ -24,7 +24,7 @@ class OrroLog(object):
 		# logger实例获取
 		self._Logger = logging.getLogger('ORRO')
 		# 指定logger控制器
-		self._LogHandler = logging.FileHandler(filename='Orro.log')
+		self._LogHandler = logging.FileHandler(filename='Orro_L.log')
 		# 设置log格式
 		self._LogFormat = logging.Formatter('%(levelname)-9s %(asctime)s    %(message)s')
 		# 格式信息加载到控制器上

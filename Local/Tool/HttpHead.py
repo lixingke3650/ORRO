@@ -19,6 +19,8 @@ class HttpHead():
 		if headstr == None:
 			return
 
+		self._Headcomplete = {}
+
 		count = headstr.find( '\r\n\r\n' )
 		if(  count == -1 ):
 			return
@@ -71,7 +73,8 @@ class HttpHead():
 			if( tagname == None ):
 				return( self._Headcomplete )
 			else:
-				return( self._Headcomplete[ tagname ] )
+				# return( self._Headcomplete[ tagname ] )
+				return (self._Headcomplete.get(tagname, None))
 		except:
 			return( None )
 
@@ -108,7 +111,7 @@ class HttpHead():
 		if( key == None ):
 			return
 
-		# 不含有该条目则删除
+		# 不含有该条目则返回
 		count = self._HeadStr.find( key )
 		if( count == -1 ):
 			return
@@ -129,3 +132,54 @@ class HttpHead():
 			del self._Headcomplete[key]
 		except:
 			pass
+
+	def updateKey( self, key, value):
+		'''头信息变更,不存在则返回'''
+
+		if (value == None):
+			return
+
+		# 不含有该条目则返回
+		count = self._HeadStr.find( key )
+		if( count == -1 ):
+			return
+		count1 = self._HeadStr[count:].find( '\r\n' )
+		if( count1 == -1 ):
+			return
+		count1 = count + count1
+		count2 = self._HeadStr[count:count1].find( ': ' )
+		self._HeadStr = self._HeadStr[0:count+count2+2] + value + self._HeadStr[count1:]
+
+		# 头信息词典替换
+		try:
+			self._Headcomplete[key] = value
+		except:
+			pass
+
+	def updateKey2( self, key, value):
+		'''头信息变更,不存在则追加'''
+
+		if (value == None):
+			return
+
+		flg = True
+		# 不含有该条目则增加
+		count = self._HeadStr.find( key )
+		if( count == -1 ):
+			flg = False
+		count1 = self._HeadStr[count:].find( '\r\n' )
+		if( count1 == -1 ):
+			flg = False
+
+		if (flg == True):
+			count1 = count + count1
+			count2 = self._HeadStr[count:count1].find( ': ' )
+			self._HeadStr = self._HeadStr[0:count+count2+2] + value + self._HeadStr[count1:]
+
+			# 头信息词典替换
+			try:
+				self._Headcomplete[key] = value
+			except:
+				pass
+		else:
+			self.addHeadKey(key + ': ' + value)
