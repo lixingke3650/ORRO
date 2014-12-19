@@ -13,12 +13,11 @@ sys.path.append('..')
 import Tool.HttpHead
 import Tool.Logger
 from globals import G_Log
+from globals import G_ORRO_R_HOST
+from globals import G_ORRO_R_PORT
 
 # 最大读取字节数
 S_RECV_MAXSIZE = 65535
-S_ORRO_HOST = '192.168.1.125'
-S_ORRO_PORT = 5085
-S_ORRO_URL = 'http://192.168.1.125:5085/ORRO_HTTP'
 
 class HttpProxy(object):
 	"""docstring for HttpProxy"""
@@ -62,7 +61,7 @@ class HttpProxy(object):
 			self._FirstHeadDict_Computer_Local = Tool.HttpHead.HttpHead( self._FirstHeadStr_Computer_Local )
 			# ORRO Server Connect
 			self._Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-			self._Local_Remote_Address = ( S_ORRO_HOST, S_ORRO_PORT )
+			self._Local_Remote_Address = ( G_ORRO_R_HOST, G_ORRO_R_PORT )
 			self._Socket_Local_Remote.connect( self._Local_Remote_Address )
 
 		except Exception as e:
@@ -157,8 +156,6 @@ class HttpProxy(object):
 	def processLocalToRemote( self ):
 		'''本地请求信息发送到远程'''
 
-		G_Log.debug('new session. L To R (LC)')
-
 		# 初次请求发送
 		self.aHttpProcLC( self._Socket_Local_Computer, self._Socket_Local_Remote, self._FirstHeadStr_Computer_Local )
 		# 长连接时请求读取与发送
@@ -172,8 +169,6 @@ class HttpProxy(object):
 	def processRemoteToLocal( self ):
 		'''读取远程回复信息并发送给本地应用'''
 
-		G_Log.debug('new session. R To L (LR)')
-
 		# 应答读取与发送(至本地应用)
 		while (self._Keep_Alive_LR == True):
 			self.aHttpProcLR( self._Socket_Local_Computer, self._Socket_Local_Remote )
@@ -184,8 +179,6 @@ class HttpProxy(object):
 	def aHttpProcLC( self, socklc, socklr, head = None ):
 		'''完成一次本地的请求处理，读取head - ORRO封装 - 转发 - 读取Body - 转发
 		'''
-
-		G_Log.debug('start aHttpProcLC.')
 
 		try:
 			# Head读取
@@ -209,9 +202,6 @@ class HttpProxy(object):
 			else:
 				headstr = head
 				headlength = len(headstr)
-			# >>>>>
-			G_Log.debug( 'socklc recv headstr: %s\r\n' % headstr)
-			# <<<<<
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# 请求Body长度取得
@@ -234,14 +224,8 @@ class HttpProxy(object):
 			# headstr = headdict.getHeadStr()
 			# ORRO Head发送
 			socklr.send( orrohead )
-			# >>>>>
-			G_Log.debug( 'socklr send orrohead: %s\r\n' % orrohead)
-			# <<<<<
 			# 请求Head发送
 			socklr.send( headstr )
-			# >>>>>
-			G_Log.debug( 'socklr send headstr: %s\r\n' % headstr)
-			# <<<<<
 			# Body读取与发送
 			lengthtmp = 0
 			while (lengthtmp < bodylength):
@@ -250,16 +234,8 @@ class HttpProxy(object):
 					G_Log.info( 'socklc close(body)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
 					self._Keep_Alive_LC = False
 					break
-				# >>>>>
-				G_Log.debug( 'socklc recv buffer: %s\r\n' % buffer)
-				# <<<<<
 				socklr.send( buffer )
-				# >>>>>
-				G_Log.debug( 'socklr send buffer: %s\r\n' % buffer)
-				# <<<<<
 				lengthtmp += len(buffer)
-				# if (lengthtmp >= bodylength):
-				# 	break
 		except Exception as e:
 			self._Keep_Alive_LC = False
 			G_Log.error( 'local to remote error! [HttpProxy.py:HttpProxy:aHttpProcLC] --> %s' %e )
@@ -267,8 +243,6 @@ class HttpProxy(object):
 	def aHttpProcLR( self, socklc, socklr ):
 		'''完成一次远端的应答处理，读取ORRO包 - ORRO解封 - 转发 - 读取body - 转发
 		'''
-
-		G_Log.debug('start aHttpProcLR.')
 
 		try:
 			# ORRO Head读取
@@ -288,9 +262,6 @@ class HttpProxy(object):
 						orroheadstr[orroheadlength - 2] == '\r' and \
 						orroheadstr[orroheadlength - 1] == '\n' :
 						break
-			# >>>>>
-			G_Log.debug( 'socklr recv orroheadstr: %s\r\n' % orroheadstr)
-			# <<<<<
 			# ORRO Head处理
 			orroheaddict = Tool.HttpHead.HttpHead(orroheadstr)
 			# ORRO Body长度取得
@@ -316,17 +287,11 @@ class HttpProxy(object):
 						headstr[lengthtmp - 2] == '\r' and \
 						headstr[lengthtmp - 1] == '\n' :
 						break
-			# >>>>>
-			G_Log.debug( 'socklr recv headstr: %s\r\n' % headstr)
-			# <<<<<
 			# Response处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			headdict.updateKey('Connection', 'close')
 			headstr = headdict.getHeadStr()
 			socklc.send( headstr )
-			# >>>>>
-			G_Log.debug( 'socklc send headstr: %s\r\n' % headstr)
-			# <<<<<
 			# Response Body读取与发送
 			while (lengthtmp < orrobodylength):
 				buffer = socklr.recv(S_RECV_MAXSIZE)
@@ -334,16 +299,8 @@ class HttpProxy(object):
 					G_Log.info( 'socklr close(body)! [HttpProxy.py:HttpProxy:aHttpProcLR]')
 					self._Keep_Alive_LR = False
 					break
-				# >>>>>
-				G_Log.debug( 'socklr recv buffer: %s\r\n' % buffer)
-				# <<<<<
 				socklc.send( buffer )
-				# >>>>>
-				G_Log.debug( 'socklc send buffer: %s\r\n' % buffer)
-				# <<<<<
 				lengthtmp += len(buffer)
-				# if (lengthtmp >= orrobodylength):
-				# 	break
 		except Exception as e:
 			self._Keep_Alive_LR = False
 			G_Log.error( 'remote to local error! [HttpProxy.py:HttpProxy:aHttpProcLR] --> %s' %e )
@@ -424,8 +381,6 @@ class HttpProxy(object):
 		proxyconnection: None - 不添加ProxyOrro-Connection
 						 True - 添加ProxyOrro-Connection为keep-alive
 						 False- 添加ProxyOrro-Connection为close
-
-		注意：此处添加 Connection: close 头，每次重连ORRO服务。
 		'''
 
 		proxyorro = '\r\n'
@@ -433,10 +388,14 @@ class HttpProxy(object):
 			proxyorro = 'ProxyOrro-Connection: keep-alive\r\n'
 		elif (proxyconnection == False):
 			proxyorro = 'ProxyOrro-Connection: close\r\n'
-		headstr = 'POST http://192.168.1.125:5085/ORRO_HTTP HTTP/1.1\r\n'	\
-				+ 'Host: ' + S_ORRO_HOST + ':' + str(S_ORRO_PORT) + '\r\n'	\
-				+ 'Content-Length: ' + str(length) + '\r\n'					\
-				+ 'Connection: keep-alive\r\n'									\
-				+ proxyorro 												\
+		porttmp = ''
+		if (G_ORRO_R_PORT != 80):
+			porttmp = ':' + str(G_ORRO_R_PORT)
+		headstr = 'POST http://' + G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
+				+ 'Host: ' + G_ORRO_R_HOST + porttmp + '\r\n'								\
+				+ 'Content-Length: ' + str(length) + '\r\n'								\
+				+ 'Connection: keep-alive\r\n'											\
+				+ proxyorro 															\
 				+ '\r\n'
+
 		return headstr

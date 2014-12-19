@@ -7,9 +7,9 @@ import Tool.Logger
 import Tool.HttpHead
 import ProxyServer.ProxyServer
 
-# IP
+# 本地监视IP
 SERVER_IP = '127.0.0.1'
-# 端口
+# 本地监视端口
 LISTENPORT = 5010
 # 最大连接数
 CONNECT_MAXNUMBER = 1024
@@ -17,7 +17,6 @@ CONNECT_MAXNUMBER = 1024
 CONNECT_TIMEOUT = 10
 # 最大读取字节数
 RECV_MAXSIZE = 65535
-
 
 def main():
 	head = Tool.HttpHead.HttpHead()
