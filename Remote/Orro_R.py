@@ -49,7 +49,11 @@ class ApplicationHTTP():
 			Log.debug('http_request_head_str: \r\n' + http_request_head_str);
 			# <<<<
 			# 请求Address作成
-			address = (http_request_head_dict.getTags('Host'), 80)
+			hosttmp = http_request_head_dict.getTags('Host').split(':')
+			port = 80
+			if (len(hosttmp) > 1):
+				port = int(hosttmp[1])
+			address = (hosttmp[0], port)
 			# 与请求方建立连接
 			self._Socket_R = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self._Socket_R.connect(address)
