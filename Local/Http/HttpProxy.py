@@ -12,9 +12,8 @@ sys.path.append('..')
 # original
 import Tool.HttpHead
 import Tool.Logger
+import globals
 from globals import G_Log
-from globals import G_ORRO_R_HOST
-from globals import G_ORRO_R_PORT
 
 # 最大读取字节数
 S_RECV_MAXSIZE = 65535
@@ -47,10 +46,7 @@ class HttpProxy(object):
 	def start( self ):
 		# worker add
 		try:
-			ret = self._WorkerManagerLocalComputer.workadd()
-			#>>>>
-			print('WorkAdd : %d' %ret)
-			#<<<<
+			self._WorkerManagerLocalComputer.workadd()
 			self._IsWorker = True
 		except Exception as e:
 			self._IsWorker = False
@@ -61,11 +57,11 @@ class HttpProxy(object):
 			self._FirstHeadDict_Computer_Local = Tool.HttpHead.HttpHead( self._FirstHeadStr_Computer_Local )
 			# ORRO Server Connect
 			self._Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-			self._Local_Remote_Address = ( G_ORRO_R_HOST, G_ORRO_R_PORT )
+			self._Local_Remote_Address = ( globals.G_ORRO_R_HOST, globals.G_ORRO_R_PORT )
 			self._Socket_Local_Remote.connect( self._Local_Remote_Address )
 
 		except Exception as e:
-			ret = self._WorkerManagerLocalComputer.workdel()
+			self._WorkerManagerLocalComputer.workdel()
 			G_Log.error( 'socket connect error! [HttpProxy.py:HttpProxy:start] --> %s' %e )
 			return
 		# process thread
@@ -99,10 +95,7 @@ class HttpProxy(object):
 			# self._ProcessRtoL.join()
 			if( self._IsWorker == True ): 
 				self._IsWorker = False
-				ret = self._WorkerManagerLocalComputer.workdel()
-				#>>>>
-				print('WorkDel : %d' %ret)
-				#<<<<
+				self._WorkerManagerLocalComputer.workdel()
 		except Exception as e:
 			G_Log.error( 'HttpProxy stopAll err! [HttpProxy.py:HttpProxy:stopAll] --> %s' %e )
 
@@ -124,10 +117,7 @@ class HttpProxy(object):
 				# G_Log.info( 'HttpProxy stop! [HttpProxy.py:HttpProxy:stop]')
 				if( self._IsWorker == True ): 
 					self._IsWorker = False
-					ret = self._WorkerManagerLocalComputer.workdel()
-					#>>>>
-					print('WorkDel : %d' %ret)
-					#<<<<
+					self._WorkerManagerLocalComputer.workdel()
 		except Exception as e:
 			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop] --> %s' %e )
 
@@ -145,10 +135,7 @@ class HttpProxy(object):
 				# G_Log.info( 'HttpProxy stop! [HttpProxy.py:HttpProxy:stop]')
 				if( self._IsWorker == True ): 
 					self._IsWorker = False
-					ret = self._WorkerManagerLocalComputer.workdel()
-					#>>>>
-					print('WorkDel : %d' %ret)
-					#<<<<
+					self._WorkerManagerLocalComputer.workdel()
 		except Exception as e:
 			G_Log.error( 'HttpProxy stop err! [HttpProxy.py:HttpProxy:stop] --> %s' %e )
 
@@ -389,10 +376,10 @@ class HttpProxy(object):
 		elif (proxyconnection == False):
 			proxyorro = 'ProxyOrro-Connection: close\r\n'
 		porttmp = ''
-		if (G_ORRO_R_PORT != 80):
-			porttmp = ':' + str(G_ORRO_R_PORT)
-		headstr = 'POST http://' + G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
-				+ 'Host: ' + G_ORRO_R_HOST + porttmp + '\r\n'								\
+		if (globals.G_ORRO_R_PORT != 80):
+			porttmp = ':' + str(globals.G_ORRO_R_PORT)
+		headstr = 'POST http://' + globals.G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
+				+ 'Host: ' + globals.G_ORRO_R_HOST + porttmp + '\r\n'								\
 				+ 'Content-Length: ' + str(length) + '\r\n'								\
 				+ 'Connection: keep-alive\r\n'											\
 				+ proxyorro 															\

@@ -33,7 +33,7 @@ class H_C_ProxyServer():
 	_Address_Local_Computer = None
 	_Socket_Local_Computer = None
 
-	def __init__( self, ip='127.0.0.1', port=5010, maximum=1024 ):
+	def __init__( self, ip='127.0.0.1', port=0, maximum=1024 ):
 		self._Ip_Loacl_Server = ip
 		self._Port_Local_Server = port
 		self._Connect_Maximum = maximum

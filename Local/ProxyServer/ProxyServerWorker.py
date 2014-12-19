@@ -13,16 +13,6 @@ import ProxyServerWorker
 from globals import G_Log
 
 
-# 端口
-REMOTE_PORT = 80
-# 最大连接数
-CONNECT_MAXNUMBER = 1024
-# 超时
-CONNECT_TIMEOUT = 10
-# 最大读取字节数
-RECV_MAXSIZE = 65535
-
-
 class ProxyServerWorker():
 	"""docstring for ProxyServerWorker"""
 
@@ -105,7 +95,15 @@ class ProxyServerWorker():
 			self.workdel()
 
 	def workadd( self ):
-		return self._WorkerManagerLocalComputer( 'add', self )
+		ret = self._WorkerManagerLocalComputer( 'add', self )
+		#>>>>
+		print('WorkAdd : %d' %ret)
+		#<<<<
+		return ret
 
 	def workdel( self ):
-		return self._WorkerManagerLocalComputer( 'del', self )
+		ret = self._WorkerManagerLocalComputer( 'del', self )
+		#>>>>
+		print('WorkDel : %d' %ret)
+		#<<<<
+		return ret
