@@ -149,8 +149,8 @@ class HttpProxy(object):
 		while (self._Keep_Alive_LC == True):
 			self.aHttpProcLC( self._Socket_Local_Computer, self._Socket_Local_Remote )
 
-		# self.stopLC()
-		self.stopAll()
+		self.stopLC()
+		# self.stopAll()
 
 	# Remote -> Local
 	def processRemoteToLocal( self ):
@@ -160,8 +160,8 @@ class HttpProxy(object):
 		while (self._Keep_Alive_LR == True):
 			self.aHttpProcLR( self._Socket_Local_Computer, self._Socket_Local_Remote )
 
-		# self.stopLR()
-		self.stopAll()
+		self.stopLR()
+		# self.stopAll()
 
 	def aHttpProcLC( self, socklc, socklr, head = None ):
 		'''完成一次本地的请求处理，读取head - ORRO封装 - 转发 - 读取Body - 转发
