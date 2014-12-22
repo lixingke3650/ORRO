@@ -31,6 +31,8 @@ class ApplicationHTTP():
 
 		Log.debug('ApplicationHTTP  __call__ START ')
 
+		isChunk = False
+
 		try :
 			# # ORRO 头信息获取
 			# http_orro_head_str = self.getOrroHead()
@@ -43,11 +45,12 @@ class ApplicationHTTP():
 			http_request_head_str = self.getReqHead()
 			http_request_head_dict = HttpHead.HttpHead(http_request_head_str)
 			http_requestbody_length = 0
+			if ('chunked' == http_request_head_dict.getTags('Transfer-Encoding')):
+				isChunk = True
+			else:
+				isChunk = False
 			if (http_request_head_dict.getTags('Content-Length') != None):
 				http_requestbody_length = int(http_request_head_dict.getTags('Content-Length'))
-			# >>>>
-			Log.debug('http_request_head_str: \r\n' + http_request_head_str);
-			# <<<<
 			# 请求Address作成
 			hosttmp = http_request_head_dict.getTags('Host').split(':')
 			port = 80
@@ -60,7 +63,26 @@ class ApplicationHTTP():
 			# 请求head信息发送
 			self._Socket_R.send(http_request_head_str)
 			# 请求body信息发送
-			if (http_requestbody_length > 0):
+			if (isChunk == True):
+				# chunked 读取
+				chunkedstr = ''
+				while True:
+					buffer = environ['wsgi.input'].read(1)
+					if (buffer == None):
+						break
+					if (len(buffer) <= 0):
+						break
+					chunkedstr = chunkedstr + buffer;
+					bufferlength = len(chunkedstr)
+					if (bufferlength >= 4):
+						if 	chunkedstr[bufferlength - 4] == '\r' and \
+							chunkedstr[bufferlength - 3] == '\n' and \
+							chunkedstr[bufferlength - 2] == '\r' and \
+							chunkedstr[bufferlength - 1] == '\n' :
+							break
+				# chunked 发送
+				self._Socket_R.send(chunkedstr)
+			elif (http_requestbody_length > 0):
 				lengthtmp = 0
 				while True:
 					buffer = environ['wsgi.input'].read(self._BUFFER_SIZE)
@@ -68,9 +90,6 @@ class ApplicationHTTP():
 						break
 					if (len(buffer) <= 0):
 						break
-					# >>>>
-					Log.debug("environ['wsgi.input']: " + buffer);
-					# <<<<
 					self._Socket_R.send(buffer)
 					lengthtmp += len(buffer)
 					if (lengthtmp >= http_requestbody_length):
@@ -78,16 +97,35 @@ class ApplicationHTTP():
 			# response读取
 			# response head 读取
 			http_response_head = self.getResHead()
-			# >>>>
-			Log.debug('http_response_head: \r\n' + http_response_head);
-			# <<<<
 			self._Response.append(http_response_head)
 			http_response_head_dict = HttpHead.HttpHead(http_response_head)
+			if ('chunked' == http_response_head_dict.getTags('Transfer-Encoding')):
+				isChunk = True
+			else:
+				isChunk = False
 			http_responsebody_length = 0
 			if (http_response_head_dict.getTags('Content-Length') != None):
 				http_responsebody_length = int(http_response_head_dict.getTags('Content-Length'))
+			if (isChunk == True):
+				# chunked 读取
+				chunkedstr = ''
+				while True:
+					buffer = self._Socket_R.recv(1)
+					if (len(buffer) <= 0):
+						break
+					chunkedstr = chunkedstr + buffer;
+					bufferlength = len(chunkedstr)
+					if (bufferlength >= 4):
+						if 	chunkedstr[bufferlength - 4] == '\r' and \
+							chunkedstr[bufferlength - 3] == '\n' and \
+							chunkedstr[bufferlength - 2] == '\r' and \
+							chunkedstr[bufferlength - 1] == '\n' :
+							break
+					self._ResLength += bufferlength
+				# chunked 发送
+				self._Response.append(chunkedstr)
 			# response body 读取
-			if (http_responsebody_length > 0):
+			elif (http_responsebody_length > 0):
 				lengthtmp = 0
 				while True:
 					buffer = self._Socket_R.recv(self._BUFFER_SIZE)
@@ -102,15 +140,11 @@ class ApplicationHTTP():
 			self._Socket_R.close()
 			self._Socket_R = None
 			# 数据返回
-			# >>>>
-			Log.debug('self._ResLength: ' + str(self._ResLength));
-			# <<<<
 			status = '200 OK'
-			response_headers = [('Content­type','text/plain'),("Content-Length", str(self._ResLength)),('ProxyOrro-Connection','keep-alive')]
+			response_headers = []
+			# response_headers = [('Content­type','text/plain'),('Transfer-Encoding', 'chunked'),('ProxyOrro-Connection','keep-alive')]
+			response_headers = [('Content­type','text/plain'),('Content-Length', str(self._ResLength)),('ProxyOrro-Connection','keep-alive')]
 			start_response(status, response_headers)
-			# >>>>
-			Log.debug('self._Response: \r\n' + b'-+-'.join(self._Response));
-			# <<<<
 			return iter(self._Response)
 
 		except Exception as e :

@@ -149,8 +149,8 @@ class HttpProxy(object):
 		while (self._Keep_Alive_LC == True):
 			self.aHttpProcLC( self._Socket_Local_Computer, self._Socket_Local_Remote )
 
-		self.stopLC()
-		# self.stopAll()
+		# self.stopLC()
+		self.stopAll()
 
 	# Remote -> Local
 	def processRemoteToLocal( self ):
@@ -160,12 +160,15 @@ class HttpProxy(object):
 		while (self._Keep_Alive_LR == True):
 			self.aHttpProcLR( self._Socket_Local_Computer, self._Socket_Local_Remote )
 
-		self.stopLR()
-		# self.stopAll()
+		# self.stopLR()
+		self.stopAll()
 
 	def aHttpProcLC( self, socklc, socklr, head = None ):
 		'''完成一次本地的请求处理，读取head - ORRO封装 - 转发 - 读取Body - 转发
 		'''
+
+		# Transfer-Encoding: chunked对应
+		isChunk = False
 
 		try:
 			# Head读取
@@ -191,38 +194,75 @@ class HttpProxy(object):
 				headlength = len(headstr)
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
-			# 请求Body长度取得
-			bodylengthstr = headdict.getTags('Content-Length')
-			bodylength = 0
-			if (bodylengthstr != None):
-				bodylength = int(bodylengthstr)
-			# Connection状态取得
-			connection = headdict.getTags('Connection')
-			# ORRO请求头作成
-			orrohead = ''
-			if (connection == 'keep-alive' or connection == 'Keep-Alive'):
-				orrohead = self.createOrroHead(headlength+bodylength, True)
+			# Transfer-Encoding取得
+			if ('chunked' == headdict.getTags('Transfer-Encoding')):
+				isChunk = True
+			# 根据Transfer-Encoding是否存在，分别处理
+			if (isChunk == True):
+				# Connection状态取得
+				connection = headdict.getTags('Connection')
+				# ORRO请求头作成
+				orrohead = ''
+				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
+					orrohead = self.createOrroHeadOfTEC(True)
+				else:
+					G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
+					orrohead = self.createOrroHeadOfTEC(False)
+				# ORRO Head发送
+				socklr.send( orrohead )
+				# 请求Head发送
+				socklr.send( headstr )
+				# chunked 读取
+				chunkedstr = ''
+				while True:
+					buffer = socklc.recv(1)
+					if (len(buffer) <= 0):
+						G_Log.info( 'socklc close(chunked length)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
+						self._Keep_Alive_LC = False
+						return
+					chunkedstr = chunkedstr + buffer;
+					bufferlength = len(chunkedstr)
+					if (bufferlength >= 4):
+						if 	chunkedstr[bufferlength - 4] == '\r' and \
+							chunkedstr[bufferlength - 3] == '\n' and \
+							chunkedstr[bufferlength - 2] == '\r' and \
+							chunkedstr[bufferlength - 1] == '\n' :
+							break
+				# chunked 发送
+				socklr.send( chunkedstr )
 			else:
-				G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
-				orrohead = self.createOrroHead(headlength+bodylength, False)
-			# 持久性连接取消
-			# headdict.delHeadKey('Connection')
-			# headdict.updateKey('Connection', 'close')
-			# headstr = headdict.getHeadStr()
-			# ORRO Head发送
-			socklr.send( orrohead )
-			# 请求Head发送
-			socklr.send( headstr )
-			# Body读取与发送
-			lengthtmp = 0
-			while (lengthtmp < bodylength):
-				buffer = socklc.recv(S_RECV_MAXSIZE)
-				if (len(buffer) <= 0):
-					G_Log.info( 'socklc close(body)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
-					self._Keep_Alive_LC = False
-					break
-				socklr.send( buffer )
-				lengthtmp += len(buffer)
+				# 请求Body长度取得
+				bodylengthstr = headdict.getTags('Content-Length')
+				bodylength = 0
+				if (bodylengthstr != None):
+					bodylength = int(bodylengthstr)
+				# Connection状态取得
+				connection = headdict.getTags('Connection')
+				# ORRO请求头作成
+				orrohead = ''
+				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
+					orrohead = self.createOrroHeadOfCL(headlength+bodylength, True)
+				else:
+					G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
+					orrohead = self.createOrroHeadOfCL(headlength+bodylength, False)
+				# 持久性连接取消
+				# headdict.delHeadKey('Connection')
+				# headdict.updateKey('Connection', 'close')
+				# headstr = headdict.getHeadStr()
+				# ORRO Head发送
+				socklr.send( orrohead )
+				# 请求Head发送
+				socklr.send( headstr )
+				# Body读取与发送
+				lengthtmp = 0
+				while (lengthtmp < bodylength):
+					buffer = socklc.recv(S_RECV_MAXSIZE)
+					if (len(buffer) <= 0):
+						G_Log.info( 'socklc close(body)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
+						self._Keep_Alive_LC = False
+						break
+					socklr.send( buffer )
+					lengthtmp += len(buffer)
 		except Exception as e:
 			self._Keep_Alive_LC = False
 			G_Log.error( 'local to remote error! [HttpProxy.py:HttpProxy:aHttpProcLC] --> %s' %e )
@@ -230,6 +270,9 @@ class HttpProxy(object):
 	def aHttpProcLR( self, socklc, socklr ):
 		'''完成一次远端的应答处理，读取ORRO包 - ORRO解封 - 转发 - 读取body - 转发
 		'''
+
+		# Transfer-Encoding: chunked对应
+		isChunk = False
 
 		try:
 			# ORRO Head读取
@@ -256,7 +299,6 @@ class HttpProxy(object):
 			orrobodylength = 0
 			if (orrobodylengthstr != None):
 				orrobodylength = int(orrobodylengthstr)
-			# ORRO Body读取与发送
 			# Response Head读取与发送
 			headstr = ''
 			lengthtmp = 0
@@ -276,18 +318,42 @@ class HttpProxy(object):
 						break
 			# Response处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
+			# Transfer-Encoding取得
+			if ('chunked' == headdict.getTags('Transfer-Encoding')):
+				isChunk = True
 			headdict.updateKey('Connection', 'close')
 			headstr = headdict.getHeadStr()
 			socklc.send( headstr )
-			# Response Body读取与发送
-			while (lengthtmp < orrobodylength):
-				buffer = socklr.recv(S_RECV_MAXSIZE)
-				if (len(buffer) <= 0):
-					G_Log.info( 'socklr close(body)! [HttpProxy.py:HttpProxy:aHttpProcLR]')
-					self._Keep_Alive_LR = False
-					break
-				socklc.send( buffer )
-				lengthtmp += len(buffer)
+			# 根据Transfer-Encoding是否存在，分别处理
+			if (isChunk == True):
+				# chunked 读取
+				chunkedstr = ''
+				while True:
+					buffer = socklr.recv(1)
+					if (len(buffer) <= 0):
+						G_Log.info( 'socklc close(chunked length)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
+						self._Keep_Alive_LC = False
+						return
+					chunkedstr = chunkedstr + buffer;
+					bufferlength = len(chunkedstr)
+					if (bufferlength >= 4):
+						if 	chunkedstr[bufferlength - 4] == '\r' and \
+							chunkedstr[bufferlength - 3] == '\n' and \
+							chunkedstr[bufferlength - 2] == '\r' and \
+							chunkedstr[bufferlength - 1] == '\n' :
+							break
+				# chunked 发送
+				socklc.send( chunkedstr )
+			else:
+				# Response Body读取与发送
+				while (lengthtmp < orrobodylength):
+					buffer = socklr.recv(S_RECV_MAXSIZE)
+					if (len(buffer) <= 0):
+						G_Log.info( 'socklr close(body)! [HttpProxy.py:HttpProxy:aHttpProcLR]')
+						self._Keep_Alive_LR = False
+						break
+					socklc.send( buffer )
+					lengthtmp += len(buffer)
 		except Exception as e:
 			self._Keep_Alive_LR = False
 			G_Log.error( 'remote to local error! [HttpProxy.py:HttpProxy:aHttpProcLR] --> %s' %e )
@@ -362,7 +428,7 @@ class HttpProxy(object):
 			G_Log.error( 'del ProxyOrro-Connection error! [HttpProxy.py:HttpProxy:delProxyOrroConnection] --> %s' %e )
 		return head
 
-	def createOrroHead( self, length, proxyconnection ):
+	def createOrroHeadOfCL( self, length, proxyconnection ):
 		'''生成ORRO头
 		length         : bodysize
 		proxyconnection: None - 不添加ProxyOrro-Connection
@@ -384,5 +450,28 @@ class HttpProxy(object):
 				+ 'Connection: keep-alive\r\n'											\
 				+ proxyorro 															\
 				+ '\r\n'
+		return headstr
 
+	def createOrroHeadOfTEC( self, proxyconnection ):
+		'''生成ORRO头,用于处理Transfer-Encoding: chunked
+		proxyconnection: None - 不添加ProxyOrro-Connection
+						 True - 添加ProxyOrro-Connection为keep-alive
+						 False- 添加ProxyOrro-Connection为close
+		'''
+
+		proxyorro = '\r\n'
+		if (proxyconnection == True):
+			proxyorro = 'ProxyOrro-Connection: keep-alive\r\n'
+		elif (proxyconnection == False):
+			proxyorro = 'ProxyOrro-Connection: close\r\n'
+		porttmp = ''
+		if (globals.G_ORRO_R_PORT != 80):
+			porttmp = ':' + str(globals.G_ORRO_R_PORT)
+		headstr = 'POST http://' + globals.G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
+				+ 'Host: ' + globals.G_ORRO_R_HOST + porttmp + '\r\n'								\
+				+ 'Transfer-Encoding: chunked\r\n'										\
+				+ 'Connection: keep-alive\r\n'											\
+				+ proxyorro 															\
+				+ '\r\n'
+		G_Log.debug('createOrroHeadOfTEC headstr:%s' % headstr)
 		return headstr
