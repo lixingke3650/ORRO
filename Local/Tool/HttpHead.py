@@ -5,7 +5,12 @@
 class HttpHead():
 	'''http head info
 
-	getTags(): return Tag info'''
+	getTags()
+	getHeadStr()
+	addHeadKey()
+	delHeadKey()
+	updateKey()
+	updateKey2()'''
 
 	# complete
 	_Headcomplete = {}
