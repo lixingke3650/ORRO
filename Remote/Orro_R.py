@@ -60,6 +60,9 @@ class ApplicationHTTP():
 			# 与请求方建立连接
 			self._Socket_R = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self._Socket_R.connect(address)
+			# 持久性连接取消
+			# http_request_head_dict.updateKey2('Connection', 'close')
+			# http_request_head_str = http_request_head_dict.getHeadStr()
 			# 请求head信息发送
 			self._Socket_R.send(http_request_head_str)
 			# 请求body信息发送
