@@ -191,16 +191,18 @@ class HttpProxy(object):
 							break
 			else:
 				headstr = head
-				headlength = len(headstr)
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
+			# Connection状态取得
+			connection = headdict.getTags('Connection')
+			# 持久性连接取消
+			# headdict.updateKey2('Connection', 'close')
+			# headstr = headdict.getHeadStr()
 			# Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
 			# 根据Transfer-Encoding是否存在，分别处理
 			if (isChunk == True):
-				# Connection状态取得
-				connection = headdict.getTags('Connection')
 				# ORRO请求头作成
 				orrohead = ''
 				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
@@ -236,19 +238,17 @@ class HttpProxy(object):
 				bodylength = 0
 				if (bodylengthstr != None):
 					bodylength = int(bodylengthstr)
-				# Connection状态取得
-				connection = headdict.getTags('Connection')
 				# ORRO请求头作成
+				headlength = len(headstr)
 				orrohead = ''
 				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
 					orrohead = self.createOrroHeadOfCL(headlength+bodylength, True)
 				else:
 					G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
 					orrohead = self.createOrroHeadOfCL(headlength+bodylength, False)
-				# 持久性连接取消
-				# headdict.delHeadKey('Connection')
-				# headdict.updateKey('Connection', 'close')
-				# headstr = headdict.getHeadStr()
+				# >>>>>>>>>>>>>
+				G_Log.debug('headstr: %s' % headstr)
+				# <<<<<<<<<<<<<
 				# ORRO Head发送
 				socklr.send( orrohead )
 				# 请求Head发送
@@ -461,8 +461,10 @@ class HttpProxy(object):
 
 		proxyorro = '\r\n'
 		if (proxyconnection == True):
+			# proxyorro = 'ProxyOrro-Connection: keep-alive\r\n'
 			proxyorro = 'ProxyOrro-Connection: keep-alive\r\n'
 		elif (proxyconnection == False):
+			# proxyorro = 'ProxyOrro-Connection: close\r\n'
 			proxyorro = 'ProxyOrro-Connection: close\r\n'
 		porttmp = ''
 		if (globals.G_ORRO_R_PORT != 80):
