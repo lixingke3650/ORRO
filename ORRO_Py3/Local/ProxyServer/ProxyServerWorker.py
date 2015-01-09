@@ -37,19 +37,6 @@ class ProxyServerWorker():
 		headbytes = b''
 
 		try:
-			# while( isend == False ): 
-			# 	tmp = self._Socket_Local_Computer.recv(1)
-			# 	self._HeadStr_Computer_Local += tmp
-
-			# 	if( tmp == '\r' ):
-			# 		isnewline += 1
-			# 	elif( tmp == '\n' ):
-			# 		isnewline += 1
-			# 		if( isnewline >= 4 ):
-			# 			isend = True
-			# 	else:
-			# 		isnewline = 0
-
 			while True:
 				bufferbytes = self._Socket_Local_Computer.recv(1)
 				if (len(bufferbytes) <= 0):
@@ -81,7 +68,7 @@ class ProxyServerWorker():
 				self._ProxyWorker = Http.HttpProxy.HttpProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
 			elif( self._ConnectionType_Local_Remote == 'HTTPS' ):
 				# self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
-				G_Log.warn( 'ProxyWorker create warning - HTTPS! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )
+				G_Log.warn( 'ProxyWorker create warning - HTTPS! [ProxyServerWorker.py:ProxyServerWorker:start] --> _HeadStr_Computer_Local: %s' %(self._HeadStr_Computer_Local) )
 				self._Socket_Local_Computer.close()
 				return
 			else:

@@ -78,12 +78,13 @@ class H_C_ProxyServer():
 		while( self._isRun == True ):
 			try:
 				self._Socket_Local_Computer, self._Address_Local_Computer = self._Socket_Local_Server.accept()
+				G_Log.debug( 'accept: %s' % str(self._Address_Local_Computer) )
 				proxyserverworker = ProxyServerWorker.ProxyServerWorker( self._Socket_Local_Computer, self.proxyserverworksmanager )
 				workerthread = threading.Thread( target = proxyserverworker.start )
 				workerthread.start()
 
-			except:
-				G_Log.error( 'workerthread generator error! [ProxyServer.py:H_C_ProxyServer:generator]' )
+			except Exception as e:
+				G_Log.error( 'workerthread generator error! [ProxyServer.py:H_C_ProxyServer:generator] --> %s' %e )
 				# pass
 
 	def proxyserverworksmanager( self, oper, worker ):

@@ -15,8 +15,7 @@ def loadConfig():
 	globals.G_ORRO_L_CONNECT_MAXNUMBER = config.getKeyInt('ORRO_L','CONNECT_MAXNUMBER')
 	globals.G_ORRO_R_HOST = config.getKey('ORRO_R','HOST')
 	globals.G_ORRO_R_PORT = config.getKeyInt('ORRO_R','PORT')
-
-	
+	globals.G_Log.setLevel(config.getKey('ORRO_L','LOG_LEVEL'))	
 
 def main():
 	print('This is Proxy Service Of ORRO.')
@@ -31,6 +30,7 @@ def main():
 	print('* Local Server C_Max: %d' % globals.G_ORRO_L_CONNECT_MAXNUMBER)
 	print('* Remote Server Host: %s' % globals.G_ORRO_R_HOST)
 	print('* Remote Server Port: %d' % globals.G_ORRO_R_PORT)
+	print('* Local Log Level: %s' % globals.G_Log.getLevel())
 	print('=====================================================')
 	print('')
 	

@@ -34,6 +34,23 @@ class OrroLog(object):
 		# 设置log级别
 		self._Logger.setLevel(logging.DEBUG)
 
+	def setLevel(self, level):
+		if (level == 'CRITICAL'):
+			self._Logger.setLevel(logging.CRITICAL)
+		elif (level == 'ERROR'):
+			self._Logger.setLevel(logging.ERROR)
+		elif (level == 'WARN'):
+			self._Logger.setLevel(logging.WARN)
+		elif (level == 'INFO'):
+			self._Logger.setLevel(logging.INFO)
+		elif (level == 'DEBUG'):
+			self._Logger.setLevel(logging.DEBUG)
+		else:
+			self._Logger.setLevel(logging.NOTSET)
+
+	def getLevel(self):
+		return logging.getLevelName(self._Logger.getEffectiveLevel())
+
 	def debug(self, msg):
 		self._Logger.debug(msg)
 
