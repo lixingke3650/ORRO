@@ -2,11 +2,14 @@
 # -*-coding: utf-8-*-
 # FileName: Orro.py
 
+# sys
+import sys
 # original
 import globals
 import Tool
 import ProxyServer.ProxyServer
 
+__Version__ = '0.1'
 
 def loadConfig():
 	config = Tool.Config.ConfigIni('Config.ini')
@@ -20,6 +23,8 @@ def loadConfig():
 def main():
 	print('This is Proxy Service Of ORRO.')
 	print('(https://github.com/lixingke3650/ORRO)')
+	print('ORRO Local Server Version: ' + __Version__)
+	print('Python Version: ' + sys.version)
 	print('')
 
 	loadConfig()

@@ -249,9 +249,9 @@ class HttpProxy(object):
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
-			# 持久性连接取消
-			headdict.updateKey2('Connection', 'close')
-			headstr = headdict.getHeadStr()
+			# # 持久性连接取消
+			# headdict.updateKey2('Connection', 'close')
+			# headstr = headdict.getHeadStr()
 			# Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
@@ -387,7 +387,8 @@ class HttpProxy(object):
 			# Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
-			# headdict.updateKey('Connection', 'close')
+			# 持久性连接取消
+			headdict.updateKey2('Connection', 'close')
 			headstr = headdict.getHeadStr()
 			socklc.send( headstr.encode('utf8') )
 			# >>>>>>>>>>>>>
@@ -422,6 +423,7 @@ class HttpProxy(object):
 						self._Keep_Alive_LR = False
 						break
 					socklc.send( buffer )
+					G_Log.debug( 'send socklc! [HttpProxy.py:HttpProxy:aHttpProcLR]')
 					lengthtmp += len(buffer)
 		except Exception as e:
 			self._Keep_Alive_LR = False
