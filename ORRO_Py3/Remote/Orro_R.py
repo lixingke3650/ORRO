@@ -51,6 +51,8 @@ class ApplicationHTTP():
 				isChunk = False
 			if (http_request_head_dict.getTags('Content-Length') != None):
 				http_requestbody_length = int(http_request_head_dict.getTags('Content-Length'))
+			if (http_request_head_dict.getTags('Content-length') != None):
+				http_requestbody_length = int(http_request_head_dict.getTags('Content-length'))
 			# 请求Address作成
 			hosttmp = http_request_head_dict.getTags('Host').split(':')
 			port = 80
@@ -109,6 +111,8 @@ class ApplicationHTTP():
 			http_responsebody_length = 0
 			if (http_response_head_dict.getTags('Content-Length') != None):
 				http_responsebody_length = int(http_response_head_dict.getTags('Content-Length'))
+			if (http_response_head_dict.getTags('Content-length') != None):
+				http_responsebody_length = int(http_response_head_dict.getTags('Content-length'))
 			if (isChunk == True):
 				# chunked 读取
 				chunkedstr = ''
