@@ -2,7 +2,7 @@
 # -*-coding: utf-8-*-
 # FileName: Orro.py
 
-# sys
+# std
 import sys
 # original
 import globals

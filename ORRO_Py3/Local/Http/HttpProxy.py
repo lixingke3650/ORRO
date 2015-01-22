@@ -3,11 +3,8 @@
 # FileName: HttpProxy.py
 
 # std
-import os
 import socket
-import sys
 import threading
-sys.path.append('..')
 # original
 import Tool
 import globals
@@ -25,7 +22,7 @@ class HttpProxy(object):
 	_Socket_Local_Computer = None
 	_Socket_Local_Remote = None
 	_FirstHeadStr_Computer_Local = None
-	_FirstHeadDict_Computer_Local = None
+	# _FirstHeadDict_Computer_Local = None
 
 	_ProcessLtoR = None
 	_ProcessRtoL = None
@@ -52,11 +49,11 @@ class HttpProxy(object):
 			return
 		try:
 			# Fir Head Format
-			self._FirstHeadDict_Computer_Local = Tool.HttpHead.HttpHead( self._FirstHeadStr_Computer_Local )
+			# self._FirstHeadDict_Computer_Local = Tool.HttpHead.HttpHead( self._FirstHeadStr_Computer_Local )
 			# ORRO Server Connect
 			self._Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 			self._Local_Remote_Address = ( globals.G_ORRO_R_HOST, globals.G_ORRO_R_PORT )
-			self._Socket_Local_Remote.connect( self._Local_Remote_Address )
+			self._Socket_Local_Remote.connect_ex( self._Local_Remote_Address )
 
 		except Exception as e:
 			self._WorkerManagerLocalComputer.workdel()
@@ -249,10 +246,10 @@ class HttpProxy(object):
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
-			# # 持久性连接取消
+			# 持久性连接取消
 			# headdict.updateKey2('Connection', 'close')
 			# headstr = headdict.getHeadStr()
-			# Transfer-Encoding取得
+			#Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
 			# 根据Transfer-Encoding是否存在，分别处理
@@ -290,8 +287,11 @@ class HttpProxy(object):
 				socklr.send( chunkedbytes )
 			else:
 				# 请求Body长度取得
-				bodylengthstr = headdict.getTags('Content-Length')
 				bodylength = 0
+				bodylengthstr = headdict.getTags('Content-Length')
+				if (bodylengthstr != None):
+					bodylength = int(bodylengthstr)
+				bodylengthstr = headdict.getTags('Content-length')
 				if (bodylengthstr != None):
 					bodylength = int(bodylengthstr)
 				# ORRO请求头作成
@@ -305,9 +305,6 @@ class HttpProxy(object):
 				socklr.send( orrohead.encode('utf8') )
 				# 请求Head发送
 				socklr.send( headstr.encode('utf8') )
-				# >>>>>>>>>>>>>
-				G_Log.debug('Request headstr: \r\n%s' % headstr)
-				# <<<<<<<<<<<<<
 				# Body读取与发送
 				lengthtmp = 0
 				buffer = b''
@@ -387,13 +384,19 @@ class HttpProxy(object):
 			# Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
+			# Response Body长度取得
+			resbodylength = 0
+			if (isChunk != True):
+				resbodylengthstr = headdict.getTags('Content-Length')
+				if (resbodylengthstr != None):
+					resbodylength = int(resbodylengthstr)
+				resbodylengthstr = headdict.getTags('Content-length')
+				if (resbodylengthstr != None):
+					resbodylength = int(resbodylengthstr)
 			# 持久性连接取消
 			headdict.updateKey2('Connection', 'close')
 			headstr = headdict.getHeadStr()
 			socklc.send( headstr.encode('utf8') )
-			# >>>>>>>>>>>>>
-			G_Log.debug('response headstr: \r\n%s' % headstr)
-			# <<<<<<<<<<<<<
 			# 根据Transfer-Encoding是否存在，分别处理
 			if (isChunk == True):
 				# chunked 读取
@@ -416,14 +419,15 @@ class HttpProxy(object):
 				socklc.send( chunkedbytes )
 			else:
 				# Response Body读取与发送
-				while (lengthtmp < orrobodylength):
+				lengthtmp = 0
+				while (lengthtmp < resbodylength):
+					G_Log.debug('Wait Response Body. Size: %d' % resbodylength)
 					buffer = socklr.recv(S_RECV_MAXSIZE)
 					if (len(buffer) <= 0):
 						G_Log.info( 'socklr close(body)! [HttpProxy.py:HttpProxy:aHttpProcLR]')
 						self._Keep_Alive_LR = False
 						break
 					socklc.send( buffer )
-					G_Log.debug( 'send socklc! [HttpProxy.py:HttpProxy:aHttpProcLR]')
 					lengthtmp += len(buffer)
 		except Exception as e:
 			self._Keep_Alive_LR = False

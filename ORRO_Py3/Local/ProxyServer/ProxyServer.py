@@ -2,12 +2,10 @@
 # -*-coding: utf-8-*-
 # FileName: ProxyServer.py
 
-import sys
+# std
 import socket
 import threading
-
-sys.path.append('..')
-# from globals import G_Log
+# orignal
 from . import ProxyServerWorker
 import Tool.Logger
 from globals import G_Log
