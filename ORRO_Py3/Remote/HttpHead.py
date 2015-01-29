@@ -4,8 +4,226 @@
 
 class HttpHead():
 	'''http head info
+	头名称全部转为小写
 
-	getTags(): return Tag info'''
+	getTags()
+	getHeadStr()
+	addHeadKey()
+	delHeadKey()
+	updateKey()
+	updateKey2()'''
+
+	# complete
+	_Headcomplete = {}
+	# headstring
+	_HeadStr = None
+	# headstr修改flag
+	_HeadModify = False
+	# Request?Response
+	# True: Request ; Flase: Response
+	_IsRequest = None
+
+	def __init__( self, headstr = None ):
+		if headstr == None:
+			return
+
+		self._Headcomplete = {}
+
+		count = headstr.find( '\r\n\r\n' )
+		if(  count == -1 ):
+			return
+
+		self._HeadStr = headstr[0:count+4]
+
+		Value1 = self._HeadStr[0:count].split( '\r\n' )
+
+		# Head头信息提取 Request?Response
+		count = Value1[0].find( 'HTTP/' )
+		if( count == -1 ):
+			return
+		elif( count == 0 ):
+			# Response
+			self._IsRequest = False
+			# Response 状态
+			self._Headcomplete['Status'] = Value1[0][9:]
+		else :
+			# Request
+			self._IsRequest = True
+			# 分析
+			Value11 = Value1[0].split( ' ' )
+
+			# Request 方法
+			self._Headcomplete['Method'] = Value11[0]
+			
+			# URL
+			if( 3 > len( Value11 ) ):
+				self._Headcomplete['Url'] = None
+			else:
+				self._Headcomplete['Url'] = Value11[1]
+
+		# HTTP协议版本
+		if( -1 != Value1[0].find( 'HTTP/1.0' ) ):
+			self._Headcomplete['HttpVersion'] = 'HTTP/1.0'
+		elif( -1 != Value1[0].find( 'HTTP/1.1' ) ):
+			self._Headcomplete['HttpVersion'] = 'HTTP/1.1'
+
+		# 其他头信息获取
+		for i in range( 1, len(Value1) ):
+			Value2 = Value1[i].split( ': ' )
+			if( len(Value2) == 2 ):
+				self._Headcomplete[Value2[0].lower()] = Value2[1]
+
+	def getTags( self, tagname = None ):
+		'''return Tag info 
+		tagname为None时，以字典形式返回所有头信息'''
+
+		try:
+			if( tagname == None ):
+				return( self._Headcomplete )
+			else:
+				return (self._Headcomplete.get(tagname.lower(), None))
+		except:
+			return( None )
+
+	def getHeadStr( self ):
+		'''return head string
+		返回处理后的头信息，包含结尾的\r\n\r\n.'''
+
+		# Request Head String
+		if self._HeadModify == True:
+			self._HeadStr = self.headComposing( self._Headcomplete )
+			self._HeadModify = False
+
+		return( self._HeadStr )
+
+	def addHeadKey( self, keypair = None ):
+		'''在头信息末尾插入新条目'''
+
+		if( keypair == None ):
+			return
+
+		count = keypair.find(': ')
+		if( count == -1 ):
+			return
+
+		try:
+			# 头字典追加
+			self._Headcomplete[keypair[0:count].lower()] = keypair[count+2:]
+			self._HeadModify = True
+		except:
+			pass
+
+	def addHeadKey( self, key = None, value = None ):
+		'''在头信息末尾插入新条目'''
+
+		if( key == None ):
+			return
+		if( value == None ):
+			return
+
+		# 统一大小写
+		key = key.lower()
+
+		try:
+			# 头字典追加
+			self._Headcomplete[key] = value
+			self._HeadModify = True
+		except:
+			pass
+
+	def delHeadKey( self, key ):
+		'''从头信息中删除条目'''
+
+		if( key == None ):
+			return
+
+		# 统一大小写
+		key = key.lower()
+
+		# 从头信息词典中删除
+		try:
+			if key in self._Headcomplete:
+				del self._Headcomplete[key]
+				self._HeadModify = True
+			else:
+				return
+		except:
+			pass
+
+	def updateKey( self, key, value):
+		'''头信息变更,不存在则返回'''
+
+		if (value == None):
+			return
+
+		# 统一大小写
+		key = key.lower()
+
+		# 头信息词典替换
+		try:
+			if key in self._Headcomplete:
+				self._Headcomplete[key] = value
+				self._HeadModify = True
+		except:
+			pass
+
+	def updateKey2( self, key, value):
+		'''头信息变更,不存在则追加'''
+
+		if (value == None):
+			return
+
+		# 统一大小写
+		key = key.lower()
+
+		# 头信息词典替换
+		try:
+			if key in self._Headcomplete:
+				self._Headcomplete[key] = value
+			else:
+				self.addHeadKey(key + ': ' + value)
+				
+			self._HeadModify = True
+		except:
+			pass
+
+
+	def headComposing( self, headdic ):
+		headstr = ''
+
+		if (self._IsRequest == True):
+			# Method
+			headstr = headdic['Method']
+			# Url
+			headstr += ' ' + headdic['Url']
+			# Http Version
+			headstr += ' ' + headdic['HttpVersion']
+		else:
+			# Http Version
+			headstr += headdic['HttpVersion']
+			# Status
+			headstr += ' ' + headdic['Status']
+		# other
+		headstr += '\r\n'
+		for key in self._Headcomplete:
+			if key == 'Method' or key == 'Url' or key == 'HttpVersion' or key == 'Status':
+				continue
+			headstr += key + ': ' + headdic[key] + '\r\n'
+		# end
+		headstr += '\r\n'
+
+		return headstr
+
+class HttpHead2():
+	'''http head info
+	保持原有头名称的大小写
+
+	getTags()
+	getHeadStr()
+	addHeadKey()
+	delHeadKey()
+	updateKey()
+	updateKey2()'''
 
 	# complete
 	_Headcomplete = {}
@@ -73,7 +291,6 @@ class HttpHead():
 			if( tagname == None ):
 				return( self._Headcomplete )
 			else:
-				# return( self._Headcomplete[ tagname ] )
 				return (self._Headcomplete.get(tagname, None))
 		except:
 			return( None )
@@ -90,20 +307,20 @@ class HttpHead():
 			# Request Head String
 			return( self._HeadStr )
 
-	def addHeadKey( self, key = None ):
+	def addHeadKey( self, keypair = None ):
 		'''在头信息末尾插入新条目'''
 
-		if( key == None ):
+		if( keypair == None ):
 			return
 
-		count = key.find(': ')
+		count = keypair.find(': ')
 		if( count == -1 ):
 			return
 
 		# 头信息追加
-		self._HeadStr = self._HeadStr[0:-2] + key + '\r\n\r\n'
+		self._HeadStr = self._HeadStr[0:-2] + keypair + '\r\n\r\n'
 		# 头字典追加
-		self._Headcomplete[key[0:count]] = key[count+2:]
+		self._Headcomplete[keypair[0:count]] = keypair[count+2:]
 
 	def delHeadKey( self, key ):
 		'''从头信息中删除条目'''
@@ -183,3 +400,4 @@ class HttpHead():
 				pass
 		else:
 			self.addHeadKey(key + ': ' + value)
+

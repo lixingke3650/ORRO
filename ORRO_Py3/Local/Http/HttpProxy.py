@@ -22,7 +22,6 @@ class HttpProxy(object):
 	_Socket_Local_Computer = None
 	_Socket_Local_Remote = None
 	_FirstHeadStr_Computer_Local = None
-	# _FirstHeadDict_Computer_Local = None
 
 	_ProcessLtoR = None
 	_ProcessRtoL = None
@@ -48,8 +47,6 @@ class HttpProxy(object):
 			G_Log.error( 'Worker add error! [HttpProxy.py:HttpProxy:start] --> %s' %e )
 			return
 		try:
-			# Fir Head Format
-			# self._FirstHeadDict_Computer_Local = Tool.HttpHead.HttpHead( self._FirstHeadStr_Computer_Local )
 			# ORRO Server Connect
 			self._Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 			self._Local_Remote_Address = ( globals.G_ORRO_R_HOST, globals.G_ORRO_R_PORT )
@@ -131,8 +128,6 @@ class HttpProxy(object):
 				self._Socket_Local_Remote.close()
 				self._Socket_Local_Remote = None
 
-			# self._ProcessLtoR.join()
-			# self._ProcessRtoL.join()
 			if( self._IsWorker == True ): 
 				self._IsWorker = False
 				self._WorkerManagerLocalComputer.workdel()
@@ -152,11 +147,7 @@ class HttpProxy(object):
 				self._Socket_Local_Remote.close()
 				self._Socket_Local_Remote = None
 
-			# self._ProcessLtoR.join()
-			# self._ProcessRtoL.join()
-
 			if ( self._Socket_Local_Computer == None and self._Socket_Local_Remote == None ):
-				# G_Log.info( 'HttpProxy stop! [HttpProxy.py:HttpProxy:stop]')
 				if( self._IsWorker == True ): 
 					self._IsWorker = False
 					self._WorkerManagerLocalComputer.workdel()
@@ -171,9 +162,6 @@ class HttpProxy(object):
 				self._Socket_Local_Computer.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Computer.close()
 				self._Socket_Local_Computer = None
-
-			# self._ProcessLtoR.join()
-			# self._ProcessRtoL.join()
 
 			if ( self._Socket_Local_Computer == None and self._Socket_Local_Remote == None ):
 				# G_Log.info( 'HttpProxy stop! [HttpProxy.py:HttpProxy:stop]')
@@ -213,7 +201,7 @@ class HttpProxy(object):
 		'''完成一次本地的请求处理，读取head - ORRO封装 - 转发 - 读取Body - 转发
 		'''
 
-		# Transfer-Encoding: chunked对应
+		# Transfer-Encoding: chunked 标记
 		isChunk = False
 
 		try:
@@ -242,7 +230,7 @@ class HttpProxy(object):
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# 去除代理添加的URL信息(百度，优酷等不识别)
 			hosttmp = 'http://' + headdict.getTags('Host')
-			headstr = headstr.replace(hosttmp, '')
+			headstr = headstr.replace(hosttmp, '', 1)
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
@@ -256,7 +244,7 @@ class HttpProxy(object):
 			if (isChunk == True):
 				# ORRO请求头作成
 				orrohead = ''
-				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
+				if (connection.lower() == 'keep-alive'):
 					orrohead = self.createOrroHeadOfTEC(True)
 				else:
 					G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
@@ -265,39 +253,29 @@ class HttpProxy(object):
 				socklr.send( orrohead.encode('utf8') )
 				# 请求Head发送
 				socklr.send( headstr.encode('utf8') )
-				# chunked 读取
-				chunkedbytes = b''
-				chunkedstr = ''
+				# >>>>>>>>>>>>>>>>
+				G_Log.debug( 'SEND REMOTE HEAD: \r\n%s' % headstr );
+				# <<<<<<<<<<<<<<<<
+
 				while True:
-					buffer = socklc.recv(1)
+					buffer = socklc.recv(S_RECV_MAXSIZE)
 					if (len(buffer) <= 0):
 						G_Log.info( 'socklc close(chunked length)! [HttpProxy.py:HttpProxy:aHttpProcLC]')
 						self._Keep_Alive_LC = False
-						if (chunkedbytes == b''):
-							return;
 						break
-					chunkedbytes = chunkedbytes + buffer;
-					bufferlength = len(chunkedbytes)
-					if (bufferlength >= 4):
-						if 	chunkedbytes[bufferlength - 4:] == b'\r\n\r\n':
-							chunkedstr = chunkedbytes.decode('utf8')
-							break
-				# chunked 发送
-				# socklr.send( chunkedstr )
-				socklr.send( chunkedbytes )
+					socklr.send( buffer )
+					if 	buffer[-5:] == b'0\r\n\r\n':
+						break
 			else:
 				# 请求Body长度取得
 				bodylength = 0
 				bodylengthstr = headdict.getTags('Content-Length')
 				if (bodylengthstr != None):
 					bodylength = int(bodylengthstr)
-				bodylengthstr = headdict.getTags('Content-length')
-				if (bodylengthstr != None):
-					bodylength = int(bodylengthstr)
 				# ORRO请求头作成
 				headlength = len(headstr)
 				orrohead = ''
-				if (connection == 'keep-alive' or connection == 'Keep-Alive'):
+				if (connection.lower() == 'keep-alive'):
 					orrohead = self.createOrroHeadOfCL(headlength+bodylength, True)
 				else:
 					orrohead = self.createOrroHeadOfCL(headlength+bodylength, False)
@@ -305,6 +283,9 @@ class HttpProxy(object):
 				socklr.send( orrohead.encode('utf8') )
 				# 请求Head发送
 				socklr.send( headstr.encode('utf8') )
+				# >>>>>>>>>>>>>>>>
+				G_Log.debug( 'SEND REMOTE HEAD: \r\n%s' % headstr );
+				# <<<<<<<<<<<<<<<<
 				# Body读取与发送
 				lengthtmp = 0
 				buffer = b''
@@ -324,7 +305,7 @@ class HttpProxy(object):
 		'''完成一次远端的应答处理，读取ORRO包 - ORRO解封 - 转发 - 读取body - 转发
 		'''
 
-		# Transfer-Encoding: chunked对应
+		# Transfer-Encoding: chunked标记
 		isChunk = False
 
 		try:
@@ -390,38 +371,29 @@ class HttpProxy(object):
 				resbodylengthstr = headdict.getTags('Content-Length')
 				if (resbodylengthstr != None):
 					resbodylength = int(resbodylengthstr)
-				resbodylengthstr = headdict.getTags('Content-length')
-				if (resbodylengthstr != None):
-					resbodylength = int(resbodylengthstr)
 			# 持久性连接取消
 			headdict.updateKey2('Connection', 'close')
 			headstr = headdict.getHeadStr()
 			socklc.send( headstr.encode('utf8') )
+			# >>>>>>>>>>>>>>>>
+			G_Log.debug( 'SEND LOCAL HEAD: \r\n%s' % headstr );
+			# <<<<<<<<<<<<<<<<
 			# 根据Transfer-Encoding是否存在，分别处理
 			if (isChunk == True):
 				# chunked 读取
-				chunkedbytes = b''
-				chunkedstr = ''
 				while True:
-					buffer = socklr.recv(1)
+					buffer = socklr.recv(S_RECV_MAXSIZE)
 					if (len(buffer) <= 0):
 						G_Log.info( 'socklr close(chunked length)! [HttpProxy.py:HttpProxy:aHttpProcLR]')
 						self._Keep_Alive_LR = False
-						if (chunkedbytes == b''):
-							return
 						break
-					chunkedbytes = chunkedbytes + buffer;
-					bufferlength = len(chunkedbytes)
-					if (bufferlength >= 4):
-						if 	chunkedbytes[bufferlength - 4:] == b'\r\n\r\n':
-							break
-				# chunked 发送
-				socklc.send( chunkedbytes )
+					socklc.send( buffer )
+					if 	buffer[-5:] == b'0\r\n\r\n':
+						break
 			else:
 				# Response Body读取与发送
 				lengthtmp = 0
 				while (lengthtmp < resbodylength):
-					G_Log.debug('Wait Response Body. Size: %d' % resbodylength)
 					buffer = socklr.recv(S_RECV_MAXSIZE)
 					if (len(buffer) <= 0):
 						G_Log.info( 'socklr close(body)! [HttpProxy.py:HttpProxy:aHttpProcLR]')

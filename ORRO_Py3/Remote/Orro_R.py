@@ -4,7 +4,7 @@
 
 # sys
 import socket
-import webob
+# import webob
 # import msvcrt
 # import os
 # original
@@ -14,7 +14,7 @@ import HttpHead
 # 二进制文件处理
 # msvcrt.setmode( 0, os.O_BINARY )
 
-Log = Logger.getLogger()
+# Log = Logger.getLogger()
 
 class ApplicationHTTP():
 	_BUFFER_SIZE = 4096
@@ -29,7 +29,7 @@ class ApplicationHTTP():
 		self._Response = ['']
 		self._Socket_R = None
 
-		Log.debug('ApplicationHTTP  __call__ START ')
+		# Log.debug('ApplicationHTTP  __call__ START ')
 
 		isChunk = False
 
@@ -51,8 +51,6 @@ class ApplicationHTTP():
 				isChunk = False
 			if (http_request_head_dict.getTags('Content-Length') != None):
 				http_requestbody_length = int(http_request_head_dict.getTags('Content-Length'))
-			if (http_request_head_dict.getTags('Content-length') != None):
-				http_requestbody_length = int(http_request_head_dict.getTags('Content-length'))
 			# 请求Address作成
 			hosttmp = http_request_head_dict.getTags('Host').split(':')
 			port = 80
@@ -70,23 +68,16 @@ class ApplicationHTTP():
 			# 请求body信息发送
 			if (isChunk == True):
 				# chunked 读取
-				chunkedstr = ''
 				while True:
-					buffer = environ['wsgi.input'].read(1)
+					buffer = environ['wsgi.input'].recv(self._BUFFER_SIZE)
 					if (buffer == None):
 						break
 					if (len(buffer) <= 0):
 						break
-					chunkedstr = chunkedstr + buffer;
-					bufferlength = len(chunkedstr)
-					if (bufferlength >= 4):
-						if 	chunkedstr[bufferlength - 4] == '\r' and \
-							chunkedstr[bufferlength - 3] == '\n' and \
-							chunkedstr[bufferlength - 2] == '\r' and \
-							chunkedstr[bufferlength - 1] == '\n' :
-							break
-				# chunked 发送
-				self._Socket_R.send(chunkedstr)
+					# chunked 发送
+					self._Socket_R.send(buffer)
+					if 	buffer[-5:] == '0\r\n\r\n':
+						break
 			elif (http_requestbody_length > 0):
 				lengthtmp = 0
 				while True:
@@ -111,26 +102,17 @@ class ApplicationHTTP():
 			http_responsebody_length = 0
 			if (http_response_head_dict.getTags('Content-Length') != None):
 				http_responsebody_length = int(http_response_head_dict.getTags('Content-Length'))
-			if (http_response_head_dict.getTags('Content-length') != None):
-				http_responsebody_length = int(http_response_head_dict.getTags('Content-length'))
 			if (isChunk == True):
 				# chunked 读取
-				chunkedstr = ''
 				while True:
-					buffer = self._Socket_R.recv(1)
+					buffer = self._Socket_R.recv(self._BUFFER_SIZE)
 					if (len(buffer) <= 0):
 						break
-					chunkedstr = chunkedstr + buffer;
-					bufferlength = len(chunkedstr)
-					if (bufferlength >= 4):
-						if 	chunkedstr[bufferlength - 4] == '\r' and \
-							chunkedstr[bufferlength - 3] == '\n' and \
-							chunkedstr[bufferlength - 2] == '\r' and \
-							chunkedstr[bufferlength - 1] == '\n' :
-							break
-					self._ResLength += bufferlength
-				# chunked 发送
-				self._Response.append(chunkedstr)
+					# chunked 发送
+					self._Response.append(buffer)
+					self._ResLength += len(buffer)
+					if 	buffer[-5:] == '0\r\n\r\n':
+						break
 			# response body 读取
 			elif (http_responsebody_length > 0):
 				lengthtmp = 0
@@ -155,10 +137,7 @@ class ApplicationHTTP():
 			return iter(self._Response)
 
 		except Exception as e :
-			Log.error('[Orro_R:ApplicationHTTP:__call__] --> e:%s' %e)
-			# for key in environ:
-			# 	Log.debug( key )
-			# 	Log.debug( environ[key] )
+			# Log.error('[Orro_R:ApplicationHTTP:__call__] --> e:%s' %e)
 			data = 'ORRO_HTTP: ERROR'
 			start_response("200 OK", 
 				[
@@ -178,14 +157,11 @@ class ApplicationHTTP():
 				reqhead = reqhead + buffer;
 				length = len(reqhead)
 				if (length >= 4):
-					if 	reqhead[length - 4] == '\r' and \
-						reqhead[length - 3] == '\n' and \
-						reqhead[length - 2] == '\r' and \
-						reqhead[length - 1] == '\n' :
+					if 	reqhead[length - 4:] == '\r\n\r\n':
 						break
 			return reqhead
 		except Exception as e:
-			Log.error('[Orro_R:ApplicationHTTP:getReqHead] --> e:%s' %e)
+			# Log.error('[Orro_R:ApplicationHTTP:getReqHead] --> e:%s' %e)
 			return None
 
 	def getResHead(self):
@@ -198,15 +174,13 @@ class ApplicationHTTP():
 				reshead = reshead + buffer;
 				length = len(reshead)
 				if (length >= 4):
-					if 	reshead[length - 4] == '\r' and \
-						reshead[length - 3] == '\n' and \
-						reshead[length - 2] == '\r' and \
-						reshead[length - 1] == '\n' :
+					if 	reshead[length - 4:] == '\r\n\r\n':
 						break
 			self._ResLength = length
 			return reshead
+
 		except Exception as e:
-			Log.error('[Orro_R:ApplicationHTTP:getResHead] --> e:%s' %e)
+			# Log.error('[Orro_R:ApplicationHTTP:getResHead] --> e:%s' %e)
 			return None
 
 class ApplicationHTTPS():

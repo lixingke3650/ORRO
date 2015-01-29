@@ -11,13 +11,10 @@
 # logging.DEBUG    # 10
 # logging.NOTSET   # 0
 
+# std
 import logging
 
-LOG_OBJ_NAME = 'ORRO_R'
-LOG_OBJ_FILENAME = 'Orro_R.log'
-
-_G_Logger = None
-
+_Logger = None
 
 class OrroLog(object):
 	_Logger = None
@@ -26,9 +23,9 @@ class OrroLog(object):
 
 	def __init__(self):
 		# logger实例获取
-		self._Logger = logging.getLogger(LOG_OBJ_NAME)
+		self._Logger = logging.getLogger('ORRO')
 		# 指定logger控制器
-		self._LogHandler = logging.FileHandler(filename=LOG_OBJ_FILENAME)
+		self._LogHandler = logging.FileHandler(filename='Orro_L.log')
 		# 设置log格式
 		self._LogFormat = logging.Formatter('%(levelname)-9s %(asctime)s    %(message)s')
 		# 格式信息加载到控制器上
@@ -37,6 +34,23 @@ class OrroLog(object):
 		self._Logger.addHandler(self._LogHandler)
 		# 设置log级别
 		self._Logger.setLevel(logging.DEBUG)
+
+	def setLevel(self, level):
+		if (level == 'CRITICAL'):
+			self._Logger.setLevel(logging.CRITICAL)
+		elif (level == 'ERROR'):
+			self._Logger.setLevel(logging.ERROR)
+		elif (level == 'WARN'):
+			self._Logger.setLevel(logging.WARN)
+		elif (level == 'INFO'):
+			self._Logger.setLevel(logging.INFO)
+		elif (level == 'DEBUG'):
+			self._Logger.setLevel(logging.DEBUG)
+		else:
+			self._Logger.setLevel(logging.NOTSET)
+
+	def getLevel(self):
+		return logging.getLevelName(self._Logger.getEffectiveLevel())
 
 	def debug(self, msg):
 		self._Logger.debug(msg)
@@ -55,11 +69,11 @@ class OrroLog(object):
 
 
 def getLogger():
-	global _G_Logger
-	if( _G_Logger == None ):
-		_G_Logger  = OrroLog()
+	global _Logger
+	if( _Logger == None ):
+		_Logger  = OrroLog()
 
-	return _G_Logger
+	return _Logger
 
 # if __name__ == "__main__":
 # 	getLogger()
