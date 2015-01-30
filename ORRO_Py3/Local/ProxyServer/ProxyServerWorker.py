@@ -14,9 +14,6 @@ class ProxyServerWorker():
 
 	_WorkerManagerLocalComputer = None
 
-	# KeepAlive_Local_Remote = None
-	# Address_Local_Remote = None
-	# Url_Local_Remote = None
 	_ConnectionType_Local_Remote = None 	# HTTP or HTTPS
 
 	_Socket_Local_Computer = None
@@ -28,7 +25,6 @@ class ProxyServerWorker():
 		self._HeadStr_Computer_Local = ''
 		self._Socket_Local_Computer = sock
 		self._WorkerManagerLocalComputer = workermanager
-		#self.Socket_Local_Remote = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
 	def gethead( self ):
 		bufferbytes = b''
@@ -37,14 +33,12 @@ class ProxyServerWorker():
 		try:
 			while True:
 				bufferbytes = self._Socket_Local_Computer.recv(1)
-				if (len(bufferbytes) <= 0):
+				if not bufferbytes:
 					G_Log.info( 'self._Socket_Local_Computer close(head)! [ProxyServerWorker.py:ProxyServerWorker:gethead]')
 					break
 				headbytes = headbytes + bufferbytes;
-				lengthtmp = len(headbytes)
-				if (lengthtmp >= 4):
-					if 	headbytes[lengthtmp - 4:] == b'\r\n\r\n':
-						break
+				if 	headbytes[-4:] == b'\r\n\r\n':
+					break
 			self._HeadStr_Computer_Local = headbytes.decode('utf8')
 
 		except:
@@ -67,7 +61,7 @@ class ProxyServerWorker():
 			elif( self._ConnectionType_Local_Remote == 'HTTPS' ):
 				self._ProxyWorker = Https.HttpsProxy.HttpsProxy( self._Socket_Local_Computer, self._HeadStr_Computer_Local, self )
 				G_Log.warn( 'ProxyWorker create warning - HTTPS! [ProxyServerWorker.py:ProxyServerWorker:start] --> _HeadStr_Computer_Local: \r\n%s' %(self._HeadStr_Computer_Local) )
-				# self._Socket_Local_Computer.close()
+				self._Socket_Local_Computer.close()
 				return
 			else:
 				G_Log.error( 'ProxyWorker create error! [ProxyServerWorker.py:ProxyServerWorker:start] --> _ConnectionType_Local_Remote: %s' %(self._ConnectionType_Local_Remote) )

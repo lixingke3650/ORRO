@@ -10,9 +10,9 @@ import Tool
 import ProxyServer.ProxyServer
 
 # 版本说明
-# 0.1：基本功能实现
-# 0.2：HTTP头处理转换为小写, Transfer-Encoding: chunked转发处理方式修改(提高性能)
-__Version__ = '0.2'
+# 0.10：基本功能实现
+# 0.20：HTTP头处理转换为小写, Transfer-Encoding: chunked转发处理方式修改(提高性能)
+__Version__ = 'v0.21'
 
 
 def loadConfig():

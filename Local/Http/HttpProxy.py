@@ -193,9 +193,13 @@ class HttpProxy(object):
 				headstr = head
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
+			# 去除代理添加的URL信息(百度，优酷等不识别)
+			hosttmp = 'http://' + headdict.getTags('Host')
+			headstr = headstr.replace(hosttmp, '')
+			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
-			# 持久性连接取消
+			# # 持久性连接取消
 			# headdict.updateKey2('Connection', 'close')
 			# headstr = headdict.getHeadStr()
 			# Transfer-Encoding取得

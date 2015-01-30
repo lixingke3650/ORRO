@@ -4,14 +4,13 @@
 
 # sys
 import socket
-# import webob
 # import msvcrt
 # import os
 # original
 import Logger
 import HttpHead
 
-# 二进制文件处理
+# 二进制文件处理(windows)
 # msvcrt.setmode( 0, os.O_BINARY )
 
 # Log = Logger.getLogger()
@@ -34,13 +33,9 @@ class ApplicationHTTP():
 		isChunk = False
 
 		try :
-			# # ORRO 头信息获取
-			# http_orro_head_str = self.getOrroHead()
-			# http_orro_head_dict = HttpHead.HttpHead(http_orro_head_str)
-			# http_request_length = http_orro_head_dict.getTags('Content-Length')
-			# # >>>>
-			# Log.debug('http_orro_head_str: ' + http_orro_head_str);
-			# # <<<<
+			# ORRO头信息已被cgi等读取
+			# 
+
 			# 请求的head信息获取
 			http_request_head_str = self.getReqHead()
 			http_request_head_dict = HttpHead.HttpHead(http_request_head_str)
@@ -57,10 +52,10 @@ class ApplicationHTTP():
 			if (len(hosttmp) > 1):
 				port = int(hosttmp[1])
 			address = (hosttmp[0], port)
-			# 与请求方建立连接
+			# 与请求目标建立连接
 			self._Socket_R = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self._Socket_R.connect(address)
-			# 持久性连接取消
+			# # 持久性连接取消
 			# http_request_head_dict.updateKey2('Connection', 'close')
 			# http_request_head_str = http_request_head_dict.getHeadStr()
 			# 请求head信息发送
@@ -70,9 +65,7 @@ class ApplicationHTTP():
 				# chunked 读取
 				while True:
 					buffer = environ['wsgi.input'].recv(self._BUFFER_SIZE)
-					if (buffer == None):
-						break
-					if (len(buffer) <= 0):
+					if not buffer:
 						break
 					# chunked 发送
 					self._Socket_R.send(buffer)
@@ -82,9 +75,7 @@ class ApplicationHTTP():
 				lengthtmp = 0
 				while True:
 					buffer = environ['wsgi.input'].read(self._BUFFER_SIZE)
-					if (buffer == None):
-						break
-					if (len(buffer) <= 0):
+					if not buffer:
 						break
 					self._Socket_R.send(buffer)
 					lengthtmp += len(buffer)
@@ -95,18 +86,21 @@ class ApplicationHTTP():
 			http_response_head = self.getResHead()
 			self._Response.append(http_response_head)
 			http_response_head_dict = HttpHead.HttpHead(http_response_head)
+			# Transfer-Encoding读取
 			if ('chunked' == http_response_head_dict.getTags('Transfer-Encoding')):
 				isChunk = True
 			else:
 				isChunk = False
+			# Content-Length读取
 			http_responsebody_length = 0
 			if (http_response_head_dict.getTags('Content-Length') != None):
 				http_responsebody_length = int(http_response_head_dict.getTags('Content-Length'))
+			# body读取
 			if (isChunk == True):
 				# chunked 读取
 				while True:
 					buffer = self._Socket_R.recv(self._BUFFER_SIZE)
-					if (len(buffer) <= 0):
+					if not buffer:
 						break
 					# chunked 发送
 					self._Response.append(buffer)
@@ -152,13 +146,11 @@ class ApplicationHTTP():
 		try:
 			while True:
 				buffer = self._Environ['wsgi.input'].read(1)
-				if (len(buffer) <= 0):
+				if not buffer:
 					break
 				reqhead = reqhead + buffer;
-				length = len(reqhead)
-				if (length >= 4):
-					if 	reqhead[length - 4:] == '\r\n\r\n':
-						break
+				if 	reqhead[-4:] == '\r\n\r\n':
+					break
 			return reqhead
 		except Exception as e:
 			# Log.error('[Orro_R:ApplicationHTTP:getReqHead] --> e:%s' %e)
@@ -169,14 +161,12 @@ class ApplicationHTTP():
 		try:
 			while True:
 				buffer = self._Socket_R.recv(1)
-				if (len(buffer) <= 0):
+				if not buffer:
 					break
 				reshead = reshead + buffer;
-				length = len(reshead)
-				if (length >= 4):
-					if 	reshead[length - 4:] == '\r\n\r\n':
-						break
-			self._ResLength = length
+				if 	reshead[-4:] == '\r\n\r\n':
+					break
+			self._ResLength = len(reshead)
 			return reshead
 
 		except Exception as e:
