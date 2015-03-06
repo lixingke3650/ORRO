@@ -5,6 +5,7 @@
 # std
 import socket
 import threading
+
 # original
 import Tool
 import globals
@@ -74,11 +75,11 @@ class HttpProxy(object):
 		G_Log.warn( 'HttpProxy stopForce! [HttpProxy.py:HttpProxy:stopForce]')
 
 		try:
-			if( self._Socket_Local_Computer != None ):
+			if( self._Socket_Local_Computer is not None ):
 				self._Socket_Local_Computer.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Computer.close()
 				self._Socket_Local_Computer = None
-			if( self._Socket_Local_Remote != None ):
+			if( self._Socket_Local_Remote is not None ):
 				self._Socket_Local_Remote.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Remote.close()
 				self._Socket_Local_Remote = None
@@ -96,18 +97,18 @@ class HttpProxy(object):
 
 		try:
 			if ( self._Keep_Alive_LC == False ):
-				if( self._Socket_Local_Computer != None ):
+				if( self._Socket_Local_Computer is not None ):
 					self._Socket_Local_Computer.shutdown( socket.SHUT_RDWR )
 					self._Socket_Local_Computer.close()
 					self._Socket_Local_Computer = None
 
 			if ( self._Keep_Alive_LR == False ):
-				if( self._Socket_Local_Remote != None ):
+				if( self._Socket_Local_Remote is not None ):
 					self._Socket_Local_Remote.shutdown( socket.SHUT_RDWR )
 					self._Socket_Local_Remote.close()
 					self._Socket_Local_Remote = None
 
-			if ( self._IsWorker == True and self._Socket_Local_Computer == None and self._Socket_Local_Remote == None ):
+			if ( self._IsWorker == True and self._Socket_Local_Computer is None and self._Socket_Local_Remote is None ):
 				self._IsWorker = False
 				self._WorkerManagerLocalComputer.workdel()
 
@@ -119,11 +120,11 @@ class HttpProxy(object):
 		self._Keep_Alive = False
 
 		try:
-			if( self._Socket_Local_Computer != None ):
+			if( self._Socket_Local_Computer is not None ):
 				self._Socket_Local_Computer.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Computer.close()
 				self._Socket_Local_Computer = None
-			if( self._Socket_Local_Remote != None ):
+			if( self._Socket_Local_Remote is not None ):
 				self._Socket_Local_Remote.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Remote.close()
 				self._Socket_Local_Remote = None
@@ -142,12 +143,12 @@ class HttpProxy(object):
 		G_Log.info( 'HttpProxy stopLR! [HttpProxy.py:HttpProxy:stopLR]')
 
 		try:
-			if( self._Socket_Local_Remote != None ):
+			if( self._Socket_Local_Remote is not None ):
 				self._Socket_Local_Remote.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Remote.close()
 				self._Socket_Local_Remote = None
 
-			if ( self._Socket_Local_Computer == None and self._Socket_Local_Remote == None ):
+			if ( self._Socket_Local_Computer is None and self._Socket_Local_Remote is None ):
 				if( self._IsWorker == True ): 
 					self._IsWorker = False
 					self._WorkerManagerLocalComputer.workdel()
@@ -158,12 +159,12 @@ class HttpProxy(object):
 		G_Log.info( 'HttpProxy stopLC! [HttpProxy.py:HttpProxy:stopLC]')
 
 		try:
-			if( self._Socket_Local_Computer != None ):
+			if( self._Socket_Local_Computer is not None ):
 				self._Socket_Local_Computer.shutdown( socket.SHUT_RDWR )
 				self._Socket_Local_Computer.close()
 				self._Socket_Local_Computer = None
 
-			if ( self._Socket_Local_Computer == None and self._Socket_Local_Remote == None ):
+			if ( self._Socket_Local_Computer is None and self._Socket_Local_Remote is None ):
 				# G_Log.info( 'HttpProxy stop! [HttpProxy.py:HttpProxy:stop]')
 				if( self._IsWorker == True ): 
 					self._IsWorker = False
@@ -226,8 +227,8 @@ class HttpProxy(object):
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# 去除代理添加的URL信息(百度，优酷等不识别)
-			hosttmp = 'http://' + headdict.getTags('Host')
-			headstr = headstr.replace(hosttmp, '', 1)
+			# hosttmp = 'http://' + headdict.getTags('Host')
+			# headstr = headstr.replace(hosttmp, '', 1)
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
@@ -241,11 +242,12 @@ class HttpProxy(object):
 			if (isChunk == True):
 				# ORRO请求头作成
 				orrohead = ''
-				if (connection.lower() == 'keep-alive'):
-					orrohead = self.createOrroHeadOfTEC(True)
-				else:
-					G_Log.info( 'Request Head Connection is not keep-alive: %s. [HttpProxy.py:HttpProxy:aHttpProcLC]' %headstr)
+				if (headdict.getTags('HttpVersion') == 'HTTP/1.0'):
 					orrohead = self.createOrroHeadOfTEC(False)
+				elif (connection is not None and connection.lower() == 'close'):
+					orrohead = self.createOrroHeadOfTEC(False)
+				else:
+					orrohead = self.createOrroHeadOfTEC(True)
 				# ORRO Head发送
 				socklr.send( orrohead.encode('utf8') )
 				# 请求Head发送
@@ -273,10 +275,12 @@ class HttpProxy(object):
 				# ORRO请求头作成
 				headlength = len(headstr)
 				orrohead = ''
-				if (connection.lower() == 'keep-alive'):
-					orrohead = self.createOrroHeadOfCL(headlength+bodylength, True)
-				else:
+				if (headdict.getTags('HttpVersion') == 'HTTP/1.0'):
 					orrohead = self.createOrroHeadOfCL(headlength+bodylength, False)
+				elif (connection is not None and connection.lower() == 'close'):
+					orrohead = self.createOrroHeadOfCL(headlength+bodylength, False)
+				else:
+					orrohead = self.createOrroHeadOfCL(headlength+bodylength, True)
 				# ORRO Head发送
 				socklr.send( orrohead.encode('utf8') )
 				# 请求Head发送
@@ -355,10 +359,10 @@ class HttpProxy(object):
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态判断
 			connection = headdict.getTags('Connection')
-			if (connection == 'close'):
+			if (headdict.getTags('HttpVersion') == 'HTTP/1.0'):
 				self._Keep_Alive_LR = False
 				self._Keep_Alive_LC = False
-			elif (headdict.getTags('HttpVersion') == 'HTTP/1.0' and connection == None):
+			elif (connection is not None and connection.lower() == 'close'):
 				self._Keep_Alive_LR = False
 				self._Keep_Alive_LC = False
 			# Transfer-Encoding取得
@@ -422,7 +426,7 @@ class HttpProxy(object):
 			else:
 				# Connection取得
 				connection = head.getTags( 'Connection' )
-				if( connection == None ):
+				if( connection is None ):
 					head.addHeadKey( 'Proxy-Connection: ' + 'close')
 				else:
 					head.addHeadKey( 'Proxy-Connection: ' + connection)
@@ -457,7 +461,7 @@ class HttpProxy(object):
 			else:
 				# Connection取得
 				connection = head.getTags( 'Connection' )
-				if( connection == None ):
+				if( connection is None ):
 					head.addHeadKey( 'ProxyOrro-Connection: ' + 'close')
 				else:
 					head.addHeadKey( 'ProxyOrro-Connection: ' + connection)
@@ -494,8 +498,9 @@ class HttpProxy(object):
 		if (globals.G_ORRO_R_PORT != 80):
 			porttmp = ':' + str(globals.G_ORRO_R_PORT)
 		headstr = 'POST http://' + globals.G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
-				+ 'Host: ' + globals.G_ORRO_R_HOST + porttmp + '\r\n'								\
+				+ 'Host: ' + globals.G_ORRO_R_HOST + porttmp + '\r\n'					\
 				+ 'Content-Length: ' + str(length) + '\r\n'								\
+				+ 'Content-Type: application/octet-stream\r\n'							\
 				+ 'Connection: keep-alive\r\n'											\
 				+ proxyorro 															\
 				+ '\r\n'
@@ -519,6 +524,7 @@ class HttpProxy(object):
 		headstr = 'POST http://' + globals.G_ORRO_R_HOST + porttmp + '/ORRO_HTTP HTTP/1.1\r\n'	\
 				+ 'Host: ' + globals.G_ORRO_R_HOST + porttmp + '\r\n'								\
 				+ 'Transfer-Encoding: chunked\r\n'										\
+				+ 'Content-Type: application/octet-stream\r\n'							\
 				+ 'Connection: keep-alive\r\n'											\
 				+ proxyorro 															\
 				+ '\r\n'

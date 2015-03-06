@@ -45,7 +45,7 @@ class HttpHead():
 			# Response
 			self._IsRequest = False
 			# Response 状态
-			self._Headcomplete['Status'] = Value1[0][9:]
+			self._Headcomplete['status'] = Value1[0][9:]
 		else :
 			# Request
 			self._IsRequest = True
@@ -53,19 +53,19 @@ class HttpHead():
 			Value11 = Value1[0].split( ' ' )
 
 			# Request 方法
-			self._Headcomplete['Method'] = Value11[0]
+			self._Headcomplete['method'] = Value11[0]
 			
 			# URL
 			if( 3 > len( Value11 ) ):
-				self._Headcomplete['Url'] = None
+				self._Headcomplete['url'] = None
 			else:
-				self._Headcomplete['Url'] = Value11[1]
+				self._Headcomplete['url'] = Value11[1]
 
 		# HTTP协议版本
 		if( -1 != Value1[0].find( 'HTTP/1.0' ) ):
-			self._Headcomplete['HttpVersion'] = 'HTTP/1.0'
+			self._Headcomplete['httpversion'] = 'HTTP/1.0'
 		elif( -1 != Value1[0].find( 'HTTP/1.1' ) ):
-			self._Headcomplete['HttpVersion'] = 'HTTP/1.1'
+			self._Headcomplete['httpversion'] = 'HTTP/1.1'
 
 		# 其他头信息获取
 		for i in range( 1, len(Value1) ):
@@ -193,20 +193,20 @@ class HttpHead():
 
 		if (self._IsRequest == True):
 			# Method
-			headstr = headdic['Method']
+			headstr = headdic['method']
 			# Url
-			headstr += ' ' + headdic['Url']
+			headstr += ' ' + headdic['url']
 			# Http Version
-			headstr += ' ' + headdic['HttpVersion']
+			headstr += ' ' + headdic['httpversion']
 		else:
 			# Http Version
-			headstr += headdic['HttpVersion']
+			headstr += headdic['httpversion']
 			# Status
-			headstr += ' ' + headdic['Status']
+			headstr += ' ' + headdic['status']
 		# other
 		headstr += '\r\n'
 		for key in self._Headcomplete:
-			if key == 'Method' or key == 'Url' or key == 'HttpVersion' or key == 'Status':
+			if key == 'method' or key == 'url' or key == 'httpversion' or key == 'status':
 				continue
 			headstr += key + ': ' + headdic[key] + '\r\n'
 		# end
@@ -273,9 +273,9 @@ class HttpHead2():
 
 		# HTTP协议版本
 		if( -1 != Value1[0].find( 'HTTP/1.0' ) ):
-			self._Headcomplete['HttpVersion'] = 'HTTP/1.0'
+			self._Headcomplete['httpversion'] = 'HTTP/1.0'
 		elif( -1 != Value1[0].find( 'HTTP/1.1' ) ):
-			self._Headcomplete['HttpVersion'] = 'HTTP/1.1'
+			self._Headcomplete['httpversion'] = 'HTTP/1.1'
 
 		# 其他头信息获取
 		for i in range( 1, len(Value1) ):

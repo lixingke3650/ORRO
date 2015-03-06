@@ -174,16 +174,90 @@ class ApplicationHTTP():
 			return None
 
 class ApplicationHTTPS():
-	def __call__(self, environ, start_response):
-		data = 'HTTPS'
+	_BUFFER_SIZE = 4096
+	_Environ = None
+	_ResLength = 0
+	_Socket_R = None
+	_Response = ['']
 
-		start_response("200 OK", 
-			[
-				("Content-Type", "text/html"),
-				("Content-Length", str(len(data)))
-			]
-		)
-		return iter([data])
+	def __call__(self, environ, start_response):
+		self._Environ = environ
+		self._ResLength = 0
+		self._Response = ['']
+		self._Socket_R = None
+
+		try:
+			if (self._Environ['ProxyOrro-HttpsConnect'] == 'yes'):
+				# 请求的head信息获取
+				http_request_head_str = self.getReqHead()
+				http_request_head_dict = HttpHead.HttpHead(http_request_head_str)
+				url = http_request_head_dict.getTags('Url')
+				urlarr = url.split(':')
+				# 与请求目标建立连接
+				address = (urlarr[0], urlarr[1])
+				self._Socket_R = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				self._Socket_R.connect(address)
+				# SSL BODY转发
+				buffer = environ['wsgi.input'].read(self._BUFFER_SIZE)
+				if not buffer:
+					self._Socket_R.send(buffer)
+				# Response读取
+				buffer = self._Socket_R.recv(self._BUFFER_SIZE)
+				self._ResLength = len(buffer)
+				self._Response.append(buffer)
+				# 断开请求连接
+				self._Socket_R.close()
+				self._Socket_R = None
+				# 数据返回
+				status = '200 OK'
+				response_headers = []
+				# response_headers = [('Content­type','text/plain'),('Transfer-Encoding', 'chunked'),('ProxyOrro-Connection','keep-alive')]
+				response_headers = [('Content­type','text/plain'),('Content-Length', str(self._ResLength)),('ProxyOrro-Connection','keep-alive')]
+				start_response(status, response_headers)
+				return iter(self._Response)
+
+		except Exception as e :
+			# Log.error('[Orro_R:ApplicationHTTP:__call__] --> e:%s' %e)
+			data = 'ORRO_HTTPS: ERROR'
+			start_response("200 OK", 
+				[
+					("Content-Type", "text/html"),
+					("Content-Length", str(len(data)))
+				]
+			)
+			return iter([data])
+
+	def getReqHead(self):
+		reqhead = ''
+		try:
+			while True:
+				buffer = self._Environ['wsgi.input'].read(1)
+				if not buffer:
+					break
+				reqhead = reqhead + buffer;
+				if 	reqhead[-4:] == '\r\n\r\n':
+					break
+			return reqhead
+		except Exception as e:
+			# Log.error('[Orro_R:ApplicationHTTP:getReqHead] --> e:%s' %e)
+			return None
+
+	def getResHead(self):
+		reshead = ''
+		try:
+			while True:
+				buffer = self._Socket_R.recv(1)
+				if not buffer:
+					break
+				reshead = reshead + buffer;
+				if 	reshead[-4:] == '\r\n\r\n':
+					break
+			self._ResLength = len(reshead)
+			return reshead
+
+		except Exception as e:
+			# Log.error('[Orro_R:ApplicationHTTP:getResHead] --> e:%s' %e)
+			return None
 
 class ApplicationERR():
 	def __call__(self, environ, start_response):
