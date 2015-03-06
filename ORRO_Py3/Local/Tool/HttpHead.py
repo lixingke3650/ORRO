@@ -2,9 +2,13 @@
 # -*-coding: utf-8-*-
 # Filename: HttpHead.py
 
+# std
+import string
+
 class HttpHead():
 	'''http head info
-	头名称全部转为小写
+	头名称规范化
+	内部处理采用小写，输出时将头名称单词首字母大写，如：Content-Length
 
 	getTags()
 	getHeadStr()
@@ -87,7 +91,8 @@ class HttpHead():
 
 	def getHeadStr( self ):
 		'''return head string
-		返回处理后的头信息，包含结尾的\r\n\r\n.'''
+		返回处理后的头信息，包含结尾的\r\n\r\n
+		头名称单词首字母大写'''
 
 		# Request Head String
 		if self._HeadModify == True:
@@ -189,6 +194,9 @@ class HttpHead():
 
 
 	def headComposing( self, headdic ):
+		'''由头信息字典生成头信息字符串
+		头名称单词首字母大写。'''
+
 		headstr = ''
 
 		if (self._IsRequest == True):
@@ -208,7 +216,7 @@ class HttpHead():
 		for key in self._Headcomplete:
 			if key == 'method' or key == 'url' or key == 'httpversion' or key == 'status':
 				continue
-			headstr += key + ': ' + headdic[key] + '\r\n'
+			headstr += string.capwords(key, '-') + ': ' + headdic[key] + '\r\n'
 		# end
 		headstr += '\r\n'
 

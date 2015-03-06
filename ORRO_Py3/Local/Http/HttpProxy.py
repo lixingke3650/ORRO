@@ -227,14 +227,21 @@ class HttpProxy(object):
 			# Head处理
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# 去除代理添加的URL信息(百度，优酷等不识别)
-			# hosttmp = 'http://' + headdict.getTags('Host')
-			# headstr = headstr.replace(hosttmp, '', 1)
+			hosttmp = 'http://' + headdict.getTags('Host')
+			headstr = headstr.replace(hosttmp, '', 1)
 			headdict = Tool.HttpHead.HttpHead(headstr)
 			# Connection状态取得
 			connection = headdict.getTags('Connection')
 			# 持久性连接取消
-			# headdict.updateKey2('Connection', 'close')
-			# headstr = headdict.getHeadStr()
+			headdict.updateKey2('Connection', 'close')
+			headstr = headdict.getHeadStr()
+			# ###############
+			# CnBeta中若指定 accept-encoding为gzip, deflate时
+			# response中不含有Transfer-Encoding或Content-Length
+			# 目前暂不支持不含有Transfer-Encoding或Content-Length头的解析
+			# accept-encoding 删除
+			# headdict.delHeadKey('accept-encoding')
+			# ###############
 			#Transfer-Encoding取得
 			if ('chunked' == headdict.getTags('Transfer-Encoding')):
 				isChunk = True
@@ -270,7 +277,7 @@ class HttpProxy(object):
 				# 请求Body长度取得
 				bodylength = 0
 				bodylengthstr = headdict.getTags('Content-Length')
-				if (bodylengthstr != None):
+				if (bodylengthstr is not None):
 					bodylength = int(bodylengthstr)
 				# ORRO请求头作成
 				headlength = len(headstr)
